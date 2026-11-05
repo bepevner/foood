@@ -1,4 +1,5 @@
 import math
+import uuid
 import pandas as pd
 import streamlit as st
 
@@ -6,27 +7,53 @@ st.set_page_config(page_title="한 접시 원가 계산기", page_icon="🍽️"
 st.title("🍽️ 한 접시 원가 계산기")
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 
-menu = st.text_input("메뉴 이름", "김치볶음밥")
-a, b = st.columns(2)
-price = a.number_input("메뉴 판매가 (원)", min_value=0, value=8000, step=100)
-target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, value=30.0, step=0.5)
-st.subheader("1. 재료 입력")
-st.info("구매량과 1인분 사용량은 같은 단위로 입력하세요. 예: 쌀 1kg 구매 → 구매량 1,000g. 손질 후 사용 가능 비율은 수율에 입력하세요.")
 initial = pd.DataFrame([
     {"재료명": "쌀", "단위": "g", "구매 가격(원)": 30000.0, "구매량": 10000.0, "1인분 사용량": 100.0, "수율(%)": 100.0},
     {"재료명": "김치", "단위": "g", "구매 가격(원)": 10000.0, "구매량": 1000.0, "1인분 사용량": 100.0, "수율(%)": 100.0},
     {"재료명": "달걀", "단위": "개", "구매 가격(원)": 9000.0, "구매량": 30.0, "1인분 사용량": 1.0, "수율(%)": 100.0},
     {"재료명": "기름·양념", "단위": "회분", "구매 가격(원)": 900.0, "구매량": 1.0, "1인분 사용량": 1.0, "수율(%)": 100.0},
 ])
-rows = st.data_editor(initial, num_rows="dynamic", hide_index=True, use_container_width=True,
+if "menus" not in st.session_state:
+    st.session_state.menus = {"sample": {"name": "김치볶음밥", "price": 8000, "target": 30.0, "extra": 0, "rows": initial.to_dict("records")}}
+    st.session_state.active_menu = "sample"
+with st.sidebar:
+    st.header("📋 메뉴 관리")
+    with st.form("add_menu", clear_on_submit=True):
+        new_name = st.text_input("추가할 메뉴 이름", placeholder="예: 제육덮밥")
+        add = st.form_submit_button("＋ 메뉴 추가")
+    if add:
+        if not new_name.strip():
+            st.warning("메뉴 이름을 입력하세요.")
+        else:
+            ident = uuid.uuid4().hex
+            st.session_state.menus[ident] = {"name": new_name.strip(), "price": 8000, "target": 30.0, "extra": 0, "rows": []}
+            st.session_state.active_menu = ident
+            st.rerun()
+    st.selectbox("편집할 메뉴", list(st.session_state.menus), key="active_menu",
+                 format_func=lambda k: st.session_state.menus[k]["name"])
+    st.caption("메뉴별 입력은 현재 접속 세션에서 유지됩니다. 새로고침·서버 재시작에 대비해 결과 CSV를 저장하세요.")
+ident = st.session_state.active_menu
+current = st.session_state.menus[ident]
+menu = st.text_input("메뉴 이름", current["name"], key=f"name_{ident}")
+a, b = st.columns(2)
+price = a.number_input("메뉴 판매가 (원)", min_value=0, value=current["price"], step=100, key=f"price_{ident}")
+target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, value=current["target"], step=0.5, key=f"target_{ident}")
+st.subheader("1. 재료 입력")
+st.info("구매량과 1인분 사용량은 같은 단위로 입력하세요. 예: 쌀 1kg 구매 → 구매량 1,000g. 손질 후 사용 가능 비율은 수율에 입력하세요.")
+# Each editor has a stable baseline and a separate key per menu.
+editor_initial = pd.DataFrame(current["rows"], columns=initial.columns)
+rows = st.data_editor(editor_initial, key=f"ingredients_{ident}", num_rows="dynamic", hide_index=True, use_container_width=True,
     column_config={
         "구매 가격(원)": st.column_config.NumberColumn(min_value=0.0),
         "구매량": st.column_config.NumberColumn(min_value=0.001),
         "1인분 사용량": st.column_config.NumberColumn(min_value=0.0),
         "수율(%)": st.column_config.NumberColumn(min_value=0.1, max_value=100.0),
     })
-extra = st.number_input("1인분당 추가 직접비 (포장 용기 등, 원)", min_value=0, value=0, step=10)
+extra = st.number_input("1인분당 추가 직접비 (포장 용기 등, 원)", min_value=0, value=current["extra"], step=10, key=f"extra_{ident}")
 
+current.update(name=menu.strip() or "이름 없는 메뉴", price=price, target=target, extra=extra)
+current["latest_rows"] = rows.to_dict("records")
+current.pop("summary", None)
 results, errors = [], []
 for i, row in rows.iterrows():
     name = row.get("재료명")
@@ -69,6 +96,13 @@ st.metric("목표 식재료 원가율에 맞춘 판매가 (100원 단위 올림)
 st.caption("목표 판매가는 식재료비만을 기준으로 계산합니다. 추가 직접비 및 고정비는 포함하지 않으며, 목표 원가율 달성이 흑자를 보장하지 않습니다.")
 st.dataframe(pd.DataFrame(results).round(2), hide_index=True, use_container_width=True)
 summary = pd.DataFrame([{"메뉴명": menu, "판매가": price, "식재료비": material, "추가 직접비": extra, "식재료 원가율(%)": material / price * 100 if price else None, "직접비 차감 잔액": price-direct, "목표 원가율(%)": target, "목표 판매가": recommended}])
+current["summary"] = summary.iloc[0].to_dict()
+st.subheader("3. 등록 메뉴 비교")
+all_summaries = [m["summary"] for m in st.session_state.menus.values() if "summary" in m]
+comparison = pd.DataFrame(all_summaries)
+st.dataframe(comparison.round(2), hide_index=True, use_container_width=True)
+st.caption("유효한 재료 입력이 완료된 메뉴만 표시됩니다. 새 메뉴는 재료를 입력하면 비교표에 나타납니다.")
+st.download_button("전체 메뉴 비교 CSV 저장", comparison.to_csv(index=False).encode("utf-8-sig"), "all_menu_costs.csv", "text/csv")
 st.download_button("계산 결과 CSV 저장", summary.to_csv(index=False).encode("utf-8-sig"), "menu_cost.csv", "text/csv")
 with st.expander("계산식과 입력 기준"):
     st.markdown("""- **재료별 원가** = 구매 가격 ÷ (구매량 × 수율 ÷ 100) × 1인분 사용량
