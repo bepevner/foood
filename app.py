@@ -16,8 +16,25 @@ initial = pd.DataFrame([
 if "menus" not in st.session_state:
     st.session_state.menus = {"sample": {"name": "김치볶음밥", "price": 8000, "target": 30.0, "extra": 0, "rows": initial.to_dict("records")}}
     st.session_state.active_menu = "sample"
+def delete_selected_menu():
+    ident = st.session_state.get("active_menu")
+    if ident not in st.session_state.menus:
+        return
+    if not st.session_state.get(f"confirm_delete_{ident}", False):
+        return
+    del st.session_state.menus[ident]
+    for prefix in ("name", "price", "target", "extra", "ingredients", "confirm_delete"):
+        st.session_state.pop(f"{prefix}_{ident}", None)
+    if st.session_state.menus:
+        st.session_state.active_menu = next(iter(st.session_state.menus))
+    else:
+        st.session_state.pop("active_menu", None)
+    st.session_state["delete_notice"] = "선택한 메뉴를 삭제했습니다."
+
 with st.sidebar:
     st.header("📋 메뉴 관리")
+    if "delete_notice" in st.session_state:
+        st.success(st.session_state.pop("delete_notice"))
     with st.form("add_menu", clear_on_submit=True):
         new_name = st.text_input("추가할 메뉴 이름", placeholder="예: 제육덮밥")
         add = st.form_submit_button("＋ 메뉴 추가")
@@ -29,9 +46,21 @@ with st.sidebar:
             st.session_state.menus[ident] = {"name": new_name.strip(), "price": 8000, "target": 30.0, "extra": 0, "rows": []}
             st.session_state.active_menu = ident
             st.rerun()
-    st.selectbox("편집할 메뉴", list(st.session_state.menus), key="active_menu",
-                 format_func=lambda k: st.session_state.menus[k]["name"])
+    if st.session_state.menus:
+        st.selectbox("편집할 메뉴", list(st.session_state.menus), key="active_menu",
+                     format_func=lambda k: st.session_state.menus[k]["name"])
+        selected = st.session_state.active_menu
+        st.divider()
+        st.checkbox(
+            f"‘{st.session_state.menus[selected]['name']}’ 메뉴와 재료를 삭제합니다 (복구 불가)",
+            key=f"confirm_delete_{selected}",
+        )
+        st.button("🗑️ 선택 메뉴 삭제", on_click=delete_selected_menu,
+                  disabled=not st.session_state.get(f"confirm_delete_{selected}", False))
     st.caption("메뉴별 입력은 현재 접속 세션에서 유지됩니다. 새로고침·서버 재시작에 대비해 결과 CSV를 저장하세요.")
+if not st.session_state.menus:
+    st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
+    st.stop()
 ident = st.session_state.active_menu
 current = st.session_state.menus[ident]
 menu = st.text_input("메뉴 이름", current["name"], key=f"name_{ident}")
