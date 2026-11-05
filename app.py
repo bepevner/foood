@@ -7,6 +7,8 @@ st.set_page_config(page_title="한 접시 원가 계산기", page_icon="🍽️"
 st.title("🍽️ 한 접시 원가 계산기")
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 
+UNIT_OPTIONS = ["g", "kg", "mL", "L", "개", "장", "마리", "봉", "팩", "병", "캔", "회분"]
+
 initial = pd.DataFrame([
     {"재료명": "쌀", "단위": "g", "구매 가격(원)": 30000.0, "구매량": 10000.0, "1인분 사용량": 100.0, "수율(%)": 100.0},
     {"재료명": "김치", "단위": "g", "구매 가격(원)": 10000.0, "구매량": 1000.0, "1인분 사용량": 100.0, "수율(%)": 100.0},
@@ -68,12 +70,16 @@ a, b = st.columns(2)
 price = a.number_input("메뉴 판매가 (원)", min_value=0, value=current["price"], step=100, key=f"price_{ident}")
 target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, value=current["target"], step=0.5, key=f"target_{ident}")
 st.subheader("1. 재료 입력")
-st.info("구매량과 1인분 사용량은 같은 단위로 입력하세요. 예: 쌀 1kg 구매 → 구매량 1,000g. 손질 후 사용 가능 비율은 수율에 입력하세요.")
+st.info("단위 칸을 클릭하면 목록에서 선택할 수 있습니다. 구매량과 1인분 사용량은 선택한 동일 단위로 입력하세요. 예: kg 선택 시 구매량 1, 사용량 0.1. 단위 변경 시 숫자는 자동 환산되지 않습니다. 손질 후 사용 가능 비율은 수율에 입력하세요.")
 # Each editor has a stable baseline and a separate key per menu.
 editor_initial = pd.DataFrame(current["rows"], columns=initial.columns)
 rows = st.data_editor(editor_initial, key=f"ingredients_{ident}", num_rows="dynamic", hide_index=True, use_container_width=True,
     column_config={
-        "구매 가격(원)": st.column_config.NumberColumn(min_value=0.0),
+        "단위": st.column_config.SelectboxColumn(
+            "단위", options=UNIT_OPTIONS, required=True, default="g",
+            help="구매량과 1인분 사용량 모두 선택한 단위로 입력하세요. 단위를 바꿔도 숫자는 자동 환산되지 않습니다.",
+        ),
+        "구매 가격(원)":  st.column_config.NumberColumn(min_value=0.0),
         "구매량": st.column_config.NumberColumn(min_value=0.001),
         "1인분 사용량": st.column_config.NumberColumn(min_value=0.0),
         "수율(%)": st.column_config.NumberColumn(min_value=0.1, max_value=100.0),
@@ -88,6 +94,9 @@ for i, row in rows.iterrows():
     name = row.get("재료명")
     if pd.isna(name) or not str(name).strip():
         errors.append(f"{i+1}행: 재료명을 입력하거나 빈 행을 삭제하세요.")
+        continue
+    if row.get("단위") not in UNIT_OPTIONS:
+        errors.append(f"{i+1}행 ({name}): 목록에서 단위를 선택하세요.")
         continue
     try:
         purchase, amount, used, yield_pct = [float(row[k]) for k in ["구매 가격(원)", "구매량", "1인분 사용량", "수율(%)"]]
