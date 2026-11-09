@@ -2,6 +2,7 @@ import math
 import uuid
 import pandas as pd
 import streamlit as st
+import firebase_store as cloud
 
 st.set_page_config(page_title="한 접시 원가 계산기", page_icon="🍽️", layout="wide")
 st.title("🍽️ 한 접시 원가 계산기")
@@ -15,14 +16,18 @@ initial = pd.DataFrame([
     {"재료명": "달걀", "단위": "개", "구매 가격(원)": 9000.0, "구매량": 30.0, "1인분 사용량": 1.0, "수율(%)": 100.0},
     {"재료명": "기름·양념", "단위": "회분", "구매 가격(원)": 900.0, "구매량": 1.0, "1인분 사용량": 1.0, "수율(%)": 100.0},
 ])
-if "menus" not in st.session_state:
-    st.session_state.menus = {"sample": {"name": "김치볶음밥", "price": 8000, "target": 30.0, "extra": 0, "rows": initial.to_dict("records")}}
-    st.session_state.active_menu = "sample"
+cloud.gate()
+
 def delete_selected_menu():
     ident = st.session_state.get("active_menu")
     if ident not in st.session_state.menus:
         return
     if not st.session_state.get(f"confirm_delete_{ident}", False):
+        return
+    try:
+        cloud.delete(ident)
+    except cloud.CloudError as e:
+        st.session_state["cloud_error"] = str(e)
         return
     del st.session_state.menus[ident]
     for prefix in ("name", "price", "target", "extra", "ingredients", "confirm_delete"):
@@ -35,6 +40,8 @@ def delete_selected_menu():
 
 with st.sidebar:
     st.header("📋 메뉴 관리")
+    if "cloud_error" in st.session_state:
+        st.error(st.session_state.pop("cloud_error"))
     if "delete_notice" in st.session_state:
         st.success(st.session_state.pop("delete_notice"))
     with st.form("add_menu", clear_on_submit=True):
@@ -59,7 +66,7 @@ with st.sidebar:
         )
         st.button("🗑️ 선택 메뉴 삭제", on_click=delete_selected_menu,
                   disabled=not st.session_state.get(f"confirm_delete_{selected}", False))
-    st.caption("메뉴별 입력은 현재 접속 세션에서 유지됩니다. 새로고침·서버 재시작에 대비해 결과 CSV를 저장하세요.")
+    st.caption("수정 후 본문의 ☁️ 현재 메뉴 저장을 눌러야 새로고침 후에도 유지됩니다. 새로고침 후 다시 로그인하세요.")
 if not st.session_state.menus:
     st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
     st.stop()
@@ -72,7 +79,11 @@ target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, 
 st.subheader("1. 재료 입력")
 st.info("단위 칸을 클릭하면 목록에서 선택할 수 있습니다. 구매량과 1인분 사용량은 선택한 동일 단위로 입력하세요. 예: kg 선택 시 구매량 1, 사용량 0.1. 단위 변경 시 숫자는 자동 환산되지 않습니다. 손질 후 사용 가능 비율은 수율에 입력하세요.")
 # Each editor has a stable baseline and a separate key per menu.
+if f"ingredients_{ident}" not in st.session_state and "latest_rows" in current:
+    current["rows"] = current["latest_rows"]
 editor_initial = pd.DataFrame(current["rows"], columns=initial.columns)
+for col in ["구매 가격(원)", "구매량", "1인분 사용량", "수율(%)"]:
+    editor_initial[col] = pd.to_numeric(editor_initial[col], errors="coerce").astype(float)
 rows = st.data_editor(editor_initial, key=f"ingredients_{ident}", num_rows="dynamic", hide_index=True, use_container_width=True,
     column_config={
         "단위": st.column_config.SelectboxColumn(
@@ -88,6 +99,13 @@ extra = st.number_input("1인분당 추가 직접비 (포장 용기 등, 원)", 
 
 current.update(name=menu.strip() or "이름 없는 메뉴", price=price, target=target, extra=extra)
 current["latest_rows"] = rows.to_dict("records")
+if st.button("☁️ 현재 메뉴 저장", type="primary"):
+    try:
+        cloud.save(ident, current)
+        st.success("Firebase에 저장했습니다. 같은 계정으로 다시 로그인하면 불러옵니다.")
+    except (cloud.CloudError, ValueError) as e:
+        st.error(str(e))
+st.caption("자동 저장이 아닙니다. 재료 입력을 마치고 저장 버튼을 누르세요. 빈 메뉴·작성 중인 메뉴도 저장할 수 있습니다.")
 current.pop("summary", None)
 results, errors = [], []
 for i, row in rows.iterrows():
@@ -148,5 +166,5 @@ with st.expander("계산식과 입력 기준"):
 - **목표 판매가** = 1인분 식재료비 ÷ (목표 원가율 ÷ 100)
 - 사용량은 손질 후 실제 사용하는 양으로 입력합니다. 손실이 없다면 수율 100%를 사용합니다.
 - 구매 가격과 판매가는 부가세 포함 여부를 일관되게 입력하세요. 세무용 계산기는 아닙니다.
-- 입력값은 서버 파일로 저장하지 않습니다. 새로고침하면 초기화될 수 있으니 CSV를 저장하세요.
+- 저장 버튼을 누른 메뉴는 Firebase에 계정별로 보관됩니다. 저장하지 않은 변경은 새로고침 시 사라집니다.
 """)
