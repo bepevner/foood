@@ -3,7 +3,22 @@ import time
 from urllib.parse import quote
 import requests
 import streamlit as st
-from streamlit_cookies_manager import EncryptedCookieManager
+# Compatibility is limited to importing the legacy cookie package.
+# Its cached encryption-engine factory uses allow_output_mutation=True.
+if not hasattr(st, "cache"):
+    def _legacy_cache(func=None, **kwargs):
+        mutable = kwargs.pop("allow_output_mutation", False)
+        kwargs.pop("suppress_st_warning", None)
+        kwargs.pop("persist", None)
+        decorator = st.cache_resource if mutable else st.cache_data
+        return decorator(func, **kwargs) if func is not None else decorator(**kwargs)
+    st.cache = _legacy_cache
+    try:
+        from streamlit_cookies_manager import EncryptedCookieManager
+    finally:
+        delattr(st, "cache")
+else:
+    from streamlit_cookies_manager import EncryptedCookieManager
 
 class CloudError(Exception):
     pass
