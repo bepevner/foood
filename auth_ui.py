@@ -15,6 +15,24 @@ def theme():
     .auth-hero h2 {color:white;margin:8px 0;}
     .auth-hero p {color:#dcece4;margin-bottom:0;}
     input {border-radius:10px!important;}
+    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {background:#f5f7fb;}
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stRadio"] label,
+    [data-testid="stCheckbox"] label,
+    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {color:#172539!important;}
+    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {color:#435469!important;}
+    input, textarea {color:#172539!important;background:#fff!important;caret-color:#172539!important;}
+    input::placeholder, textarea::placeholder {color:#596879!important;opacity:1!important;}
+    [data-baseweb="input"], [data-baseweb="base-input"],
+    [data-baseweb="select"]>div {background:#fff!important;color:#172539!important;}
+    [data-baseweb="popover"], [role="listbox"], [role="option"] {background:#fff!important;color:#172539!important;}
+    .stButton>button, .stDownloadButton>button {background:#fff;color:#183b32;border:1px solid #77988a;}
+    .stButton>button p, .stDownloadButton>button p {color:#183b32!important;}
+    .stButton>button[kind="primary"], .stFormSubmitButton>button {background:#176b50!important;color:white!important;}
+    .stButton>button[kind="primary"] p, .stFormSubmitButton>button p {color:white!important;}
+    .auth-hero h2, .auth-hero small {color:#fff!important;}
+    .auth-hero p {color:#dcece4!important;}
     </style>''',unsafe_allow_html=True)
 
 
