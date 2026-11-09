@@ -3,6 +3,7 @@ import time
 from urllib.parse import quote
 import requests
 import streamlit as st
+from streamlit_cookies_manager import EncryptedCookieManager
 
 class CloudError(Exception):
     pass
@@ -68,26 +69,64 @@ def save(ident, menu):
 def delete(ident):
     call('DELETE',base()+'/'+quote(ident,safe=''),headers=headers())
 
+def cookie_store():
+    try:
+        secret = st.secrets['login_cookie']['password']
+        if len(secret) < 32:
+            raise ValueError
+    except Exception:
+        st.error('Secrets에 [login_cookie] password를 32자 이상의 임의 문자열로 설정하세요. 로그인 유지 안내를 확인하세요.')
+        st.stop()
+    jar = EncryptedCookieManager(prefix='menu_cost_v6_', password=secret)
+    if not jar.ready():
+        st.stop()
+    return jar
+
+def forget(jar):
+    if jar.get('session'):
+        del jar['session']
+        jar.save()
+
+def restore(jar):
+    raw = jar.get('session')
+    if not raw:
+        return
+    try:
+        payload = json.loads(raw)
+        if time.time() >= payload['until']:
+            forget(jar)
+            return
+        key, _ = config()
+        d = call('POST', 'https://securetoken.googleapis.com/v1/token',
+                 params={'key':key}, data={'grant_type':'refresh_token', 'refresh_token':payload['refresh']})
+        st.session_state.auth = {
+            'uid':d['user_id'], 'token':d['id_token'], 'refresh':d['refresh_token'],
+            'expires':time.time()+int(d['expires_in']), 'email':payload.get('email','로그인됨')}
+        payload['refresh'] = d['refresh_token']
+        jar['session'] = json.dumps(payload)
+        jar.save()
+    except CloudError:
+        st.warning('자동 로그인에 실패했습니다. 다시 로그인하거나 연결을 확인하세요.')
+        forget(jar)
+    except (ValueError, KeyError, TypeError):
+        forget(jar)
+
 def gate():
+    jar = cookie_store()
     if 'auth' not in st.session_state:
-        st.subheader('🔐 로그인 / 회원가입')
-        st.caption('같은 계정으로 로그인하면 저장한 메뉴를 다시 불러옵니다.')
-        with st.form('login_form',clear_on_submit=True):
-            email=st.text_input('이메일')
-            password=st.text_input('비밀번호',type='password')
-            signup=st.checkbox('새 계정 만들기')
-            submit=st.form_submit_button('계속')
-        if submit:
-            try:
-                login(email.strip(),password,signup)
-                st.rerun()
-            except CloudError as e: st.error(str(e))
+        restore(jar)
+    if 'auth' not in st.session_state:
+        import auth_ui
+        auth_ui.screen(__import__(__name__), jar)
         st.stop()
     with st.sidebar:
         st.caption(st.session_state.auth['email'])
         if st.button('로그아웃 (저장하지 않은 변경은 사라짐)'):
+            forget(jar)
             st.session_state.clear()
-            st.rerun()
+            st.success('로그아웃했습니다. 아래 버튼을 누르세요.')
+            st.button('로그인 화면으로')
+            st.stop()
     if 'menus' not in st.session_state:
         try:
             menus=load()

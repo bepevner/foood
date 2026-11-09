@@ -5,6 +5,8 @@ import streamlit as st
 import firebase_store as cloud
 
 st.set_page_config(page_title="한 접시 원가 계산기", page_icon="🍽️", layout="wide")
+import auth_ui
+auth_ui.theme()
 st.title("🍽️ 한 접시 원가 계산기")
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 
