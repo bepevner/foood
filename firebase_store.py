@@ -84,7 +84,12 @@ def save(ident, menu):
 def delete(ident):
     call('DELETE',base()+'/'+quote(ident,safe=''),headers=headers())
 
+_run_cookie_jar = None
+
 def cookie_store():
+    global _run_cookie_jar
+    if _run_cookie_jar is not None:
+        return _run_cookie_jar
     try:
         secret = st.secrets['login_cookie']['password']
         if len(secret) < 32:
@@ -95,6 +100,7 @@ def cookie_store():
     jar = EncryptedCookieManager(prefix='menu_cost_v6_', password=secret)
     if not jar.ready():
         st.stop()
+    _run_cookie_jar = jar
     return jar
 
 def forget(jar):
@@ -127,6 +133,9 @@ def restore(jar):
         forget(jar)
 
 def gate():
+    # A component may be mounted only once per script run, not once per caller.
+    global _run_cookie_jar
+    _run_cookie_jar = None
     jar = cookie_store()
     if 'auth' not in st.session_state and not st.session_state.get('_logged_out', False):
         restore(jar)
