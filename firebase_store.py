@@ -134,18 +134,6 @@ def gate():
         import auth_ui
         auth_ui.screen(__import__(__name__), jar)
         st.stop()
-    with st.sidebar:
-        st.caption(st.session_state.auth['email'])
-        if st.button('로그아웃', use_container_width=True):
-            forget(jar)
-            # Keep the cookie component alive long enough to flush deletion.
-            for key in list(st.session_state):
-                if key in ('auth', 'menus', 'active_menu', 'page') or key.startswith(('name_', 'price_', 'target_', 'extra_', 'ingredients_', 'confirm_delete_')):
-                    del st.session_state[key]
-            st.session_state['_logged_out'] = True
-            import auth_ui
-            auth_ui.screen(__import__(__name__), jar)
-            st.stop()
     if 'menus' not in st.session_state:
         try:
             menus=load()

@@ -4,36 +4,8 @@ import streamlit as st
 
 
 def theme():
-    st.markdown('''<style>
-    .stApp {background:#f5f7fb;color:#172539;}
-    [data-testid="stSidebar"] {background:#edf3ef;}
-    h1,h2,h3 {letter-spacing:-.045em;color:#183b32;}
-    [data-testid="stForm"] {background:white;border:1px solid #dce6e1;border-radius:20px;padding:26px;box-shadow:0 12px 35px #153d2910;}
-    .stButton>button[kind="primary"], .stFormSubmitButton>button {background:#176b50;color:white;border:0;border-radius:12px;min-height:44px;}
-    [data-testid="stMetric"] {background:white;border:1px solid #dce6e1;border-radius:16px;padding:20px;}
-    .auth-hero {background:#153e32;border-radius:22px;padding:30px;color:white;margin:10px 0 26px;}
-    .auth-hero h2 {color:white;margin:8px 0;}
-    .auth-hero p {color:#dcece4;margin-bottom:0;}
-    input {border-radius:10px!important;}
-    [data-testid="stAppViewContainer"], [data-testid="stHeader"] {background:#f5f7fb;}
-    [data-testid="stMarkdownContainer"] p,
-    [data-testid="stWidgetLabel"] p,
-    [data-testid="stRadio"] label,
-    [data-testid="stCheckbox"] label,
-    [data-testid="stMetricLabel"], [data-testid="stMetricValue"] {color:#172539!important;}
-    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {color:#435469!important;}
-    input, textarea {color:#172539!important;background:#fff!important;caret-color:#172539!important;}
-    input::placeholder, textarea::placeholder {color:#596879!important;opacity:1!important;}
-    [data-baseweb="input"], [data-baseweb="base-input"],
-    [data-baseweb="select"]>div {background:#fff!important;color:#172539!important;}
-    [data-baseweb="popover"], [role="listbox"], [role="option"] {background:#fff!important;color:#172539!important;}
-    .stButton>button, .stDownloadButton>button {background:#fff;color:#183b32;border:1px solid #77988a;}
-    .stButton>button p, .stDownloadButton>button p {color:#183b32!important;}
-    .stButton>button[kind="primary"], .stFormSubmitButton>button {background:#176b50!important;color:white!important;}
-    .stButton>button[kind="primary"] p, .stFormSubmitButton>button p {color:white!important;}
-    .auth-hero h2, .auth-hero small {color:#fff!important;}
-    .auth-hero p {color:#dcece4!important;}
-    </style>''',unsafe_allow_html=True)
+    from atelier import style
+    style()
 
 
 def remember_login(cloud, jar, remember, email):
@@ -48,8 +20,8 @@ def remember_login(cloud, jar, remember, email):
 def screen(cloud, jar):
     _, main, _ = st.columns([1,5,1])
     with main:
-        st.markdown('''<div class="auth-hero"><small>MENU COST · 나의 가게 관리실</small>
-        <h2>한 접시의 가치를,<br>숫자로 정확하게.</h2>
+        st.markdown('''<div class="auth-hero"><small>MISE / PRIVATE WORKSPACE</small>
+        <h2>좋은 메뉴의 시작,<br>정확한 한 접시.</h2>
         <p>재료비 계산부터 메뉴 관리까지 한곳에서 시작하세요.</p></div>''',unsafe_allow_html=True)
         mode=st.radio('계정 메뉴',['로그인','회원가입','비밀번호 찾기','아이디 찾기'],horizontal=True,label_visibility='collapsed')
         if mode=='로그인':

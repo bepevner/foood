@@ -4,10 +4,10 @@ import pandas as pd
 import streamlit as st
 import firebase_store as cloud
 
-st.set_page_config(page_title="한 접시 원가 계산기", page_icon="🍽️", layout="wide")
+st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="collapsed")
 import auth_ui
 auth_ui.theme()
-st.title("🍽️ 한 접시 원가 계산기")
+st.markdown("<div class=brand>MISE<span> MENU ATELIER</span></div>", unsafe_allow_html=True)
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 
 UNIT_OPTIONS = ["g", "kg", "mL", "L", "개", "장", "마리", "봉", "팩", "병", "캔", "회분"]
@@ -40,46 +40,8 @@ def delete_selected_menu():
         st.session_state.pop("active_menu", None)
     st.session_state["delete_notice"] = "선택한 메뉴를 삭제했습니다."
 
-with st.sidebar:
-    icon = __import__('base64').b64encode((__import__('pathlib').Path(__file__).parent / 'assets/home.jpg').read_bytes()).decode()
-    st.markdown(f"""<style>
-    [data-testid='stSidebar'] .st-key-home_nav button {{background:white url('data:image/jpeg;base64,{icon}') center/28px 28px no-repeat!important;min-height:38px!important;width:44px!important;border-radius:10px!important;}}
-    [data-testid='stSidebar'] .st-key-home_nav button p {{font-size:0!important;}}
-    [data-testid='stSidebar'] [data-testid='stVerticalBlock'] {{gap:.5rem;}}
-    [data-testid='stSidebar'] [data-testid='stForm'] {{padding:10px;box-shadow:none;}}
-    </style>""", unsafe_allow_html=True)
-    if st.button("홈", key="home_nav", help="메뉴 홈으로", on_click=lambda: st.session_state.update(page="home")):
-        pass
-    st.caption("메뉴 관리")
-    if "cloud_error" in st.session_state:
-        st.error(st.session_state.pop("cloud_error"))
-    if "delete_notice" in st.session_state:
-        st.success(st.session_state.pop("delete_notice"))
-    with st.expander("＋ 메뉴 추가"):
-        with st.form("add_menu", clear_on_submit=True):
-            new_name = st.text_input("추가할 메뉴 이름", placeholder="예: 제육덮밥")
-            add = st.form_submit_button("＋ 메뉴 추가")
-        if add:
-            if not new_name.strip():
-                st.warning("메뉴 이름을 입력하세요.")
-            else:
-                ident = uuid.uuid4().hex
-                st.session_state.menus[ident] = {"name": new_name.strip(), "price": 8000, "target": 30.0, "extra": 0, "rows": []}
-                st.session_state.active_menu = ident
-                st.session_state.page = "edit"
-                st.rerun()
-    if st.session_state.menus:
-        st.selectbox("메뉴 선택", list(st.session_state.menus), key="active_menu", on_change=lambda: st.session_state.update(page="edit"),
-                     format_func=lambda k: st.session_state.menus[k]["name"])
-        selected = st.session_state.active_menu
-        with st.expander("메뉴 삭제"):
-            st.checkbox(
-                f"‘{st.session_state.menus[selected]['name']}’ 메뉴와 재료를 삭제합니다 (복구 불가)",
-                key=f"confirm_delete_{selected}",
-            )
-            st.button("🗑️ 선택 메뉴 삭제", on_click=delete_selected_menu,
-                      disabled=not st.session_state.get(f"confirm_delete_{selected}", False))
-    st.caption("변경 후 저장 버튼을 눌러주세요.")
+import atelier
+atelier.navigation(cloud, delete_selected_menu)
 if not st.session_state.menus:
     st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
     st.stop()
@@ -121,7 +83,7 @@ extra = st.number_input("1인분당 추가 직접비 (포장 용기 등, 원)", 
 
 current.update(name=menu.strip() or "이름 없는 메뉴", price=price, target=target, extra=extra)
 current["latest_rows"] = rows.to_dict("records")
-if st.button("☁️ 현재 메뉴 저장", type="primary"):
+if st.button("현재 메뉴 저장", type="primary"):
     try:
         cloud.save(ident, current)
         st.success("Firebase에 저장했습니다. 같은 계정으로 다시 로그인하면 불러옵니다.")
