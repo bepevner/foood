@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import firebase_store as cloud
 
-st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="expanded")
 import auth_ui
 auth_ui.theme()
 st.markdown("<div class=brand>MISE<span> MENU ATELIER</span></div>", unsafe_allow_html=True)

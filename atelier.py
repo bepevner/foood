@@ -32,7 +32,10 @@ def style():
     .auth-hero h2{font-size:36px;line-height:1.5;}
     .st-key-drawer{border-right:1px solid #ccc;padding-right:20px;animation:enter .24s ease-out;}
     @keyframes enter{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:translateX(0)}}
-    [data-testid="stSidebar"]{display:none;}
+    [data-testid="stSidebar"]{background:#efede7;border-right:1px solid #d5d2ca;}
+    [data-testid="stSidebar"] .block-container{padding:16px;}
+    [data-testid="stSidebar"] .stButton>button{width:100%;text-align:left;}
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:.6rem;}
     @media(max-width:700px){.brand{font-size:30px}.brand span{display:block;margin:8px 0}.block-container{padding:1rem;}}
     '''
     for name,path in PATHS.items():
@@ -82,48 +85,46 @@ def accounts(cloud):
     st.caption('전환 전 메뉴를 저장하세요. 추가 계정은 새로고침 시 목록에서 사라집니다. 비밀번호는 저장하지 않습니다. 계정 전환 시 이전 자동 로그인 쿠키를 해제합니다.')
 
 def navigation(cloud,delete_menu):
-    if st.button('홈 / 메뉴',key='nav_home'):
-        st.session_state.drawer_open=not st.session_state.get('drawer_open',False)
-    if not st.session_state.get('drawer_open',False):return
-    with st.container(key='drawer',border=True):
-        left,right=st.columns([1,2.5])
-        with left:
-            st.caption('MISE / WORKSPACE')
-            st.write(st.session_state.auth['email'])
-            if st.button('메뉴 목록',key='nav_menus',use_container_width=True):st.session_state.drawer_tab='menus'
-            if st.button('계정 추가 · 전환',key='nav_account',use_container_width=True):st.session_state.drawer_tab='accounts'
-            if st.button('로그아웃',key='nav_logout',use_container_width=True):
-                jar=cloud.cookie_store();cloud.forget(jar)
-                clear_workspace()
-                st.session_state.pop('auth',None)
-                st.session_state.pop('account_bank',None)
-                st.session_state['_logged_out']=True
-                import auth_ui
-                auth_ui.screen(cloud,jar)
-                st.stop()
-        with right:
-            if st.session_state.get('drawer_tab','menus')=='accounts':
-                accounts(cloud);return
-            st.subheader('Menu collection')
-            for name in ('cloud_error','delete_notice'):
-                if name in st.session_state:st.info(st.session_state.pop(name))
-            for mid,m in list(st.session_state.menus.items()):
-                c1,c2=st.columns([4,1])
-                c1.write(m['name'])
-                if c2.button('수정',key='edit_'+mid):
-                    st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-            with st.expander('메뉴 추가'):
-                with st.form('new_menu',clear_on_submit=True):
-                    name=st.text_input('새 메뉴 이름')
-                    add=st.form_submit_button('추가')
-                if add and name.strip():
-                    mid=uuid.uuid4().hex
-                    st.session_state.menus[mid]={'name':name.strip(),'price':8000,'target':30.0,'extra':0,'rows':[]}
-                    st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-            if st.session_state.menus:
-                with st.expander('메뉴 삭제'):
-                    st.selectbox('삭제할 메뉴',list(st.session_state.menus),key='active_menu',format_func=lambda k:st.session_state.menus[k]['name'])
-                    mid=st.session_state.active_menu
-                    confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
-                    st.button('삭제',on_click=delete_menu,disabled=not confirmed)
-            st.caption('새 메뉴와 수정 사항은 편집 화면에서 저장해야 합니다.')
+    with st.sidebar:
+        st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
+        st.caption(st.session_state.auth['email'])
+        if st.button('홈',key='nav_home',use_container_width=True):
+            st.session_state.page='home'
+            st.session_state.drawer_tab='menus'
+        if st.button('메뉴 목록',key='nav_menus',use_container_width=True):
+            st.session_state.drawer_tab='menus'
+        if st.button('계정 추가 · 전환',key='nav_account',use_container_width=True):
+            st.session_state.drawer_tab='accounts'
+        if st.button('로그아웃',key='nav_logout',use_container_width=True):
+            jar=cloud.cookie_store();cloud.forget(jar)
+            clear_workspace()
+            st.session_state.pop('auth',None)
+            st.session_state.pop('account_bank',None)
+            st.session_state['_logged_out']=True
+            st.rerun()
+        st.divider()
+        if st.session_state.get('drawer_tab','menus')=='accounts':
+            accounts(cloud);return
+        st.subheader('Menu collection')
+        for name in ('cloud_error','delete_notice'):
+            if name in st.session_state:st.info(st.session_state.pop(name))
+        for mid,m in list(st.session_state.menus.items()):
+            c1,c2=st.columns([4,1])
+            c1.write(m['name'])
+            if c2.button('수정',key='edit_'+mid):
+                st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
+        with st.expander('메뉴 추가'):
+            with st.form('new_menu',clear_on_submit=True):
+                name=st.text_input('새 메뉴 이름')
+                add=st.form_submit_button('추가')
+            if add and name.strip():
+                mid=uuid.uuid4().hex
+                st.session_state.menus[mid]={'name':name.strip(),'price':8000,'target':30.0,'extra':0,'rows':[]}
+                st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
+        if st.session_state.menus:
+            with st.expander('메뉴 삭제'):
+                st.selectbox('삭제할 메뉴',list(st.session_state.menus),key='active_menu',format_func=lambda k:st.session_state.menus[k]['name'])
+                mid=st.session_state.active_menu
+                confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
+                st.button('삭제',on_click=delete_menu,disabled=not confirmed)
+        st.caption('새 메뉴와 수정 사항은 편집 화면에서 저장해야 합니다.')
