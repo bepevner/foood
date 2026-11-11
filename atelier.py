@@ -38,6 +38,18 @@ def style():
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"]{gap:.6rem;}
     @media(max-width:700px){.brand{font-size:30px}.brand span{display:block;margin:8px 0}.block-container{padding:1rem;}}
     '''
+    css+='''
+    .st-key-sidebar_section [role="radiogroup"]{display:flex;gap:0;border-bottom:1px solid #c9c7c2;padding:0!important;}
+    .st-key-sidebar_section [role="radiogroup"]>label{flex:1;justify-content:center;margin:0!important;padding:13px 6px!important;border-bottom:2px solid transparent;cursor:pointer;transition:background .15s,border-color .15s;}
+    .st-key-sidebar_section [role="radiogroup"]>label>div:first-child{display:none!important;}
+    .st-key-sidebar_section label:has(input:checked){border-bottom-color:#202020;background:#e5e2dc;}
+    .st-key-sidebar_section label:has(input:checked) p{font-weight:650!important;}
+    .st-key-sidebar_section label:has(input:focus-visible){outline:2px solid #777;outline-offset:-3px;}
+    .st-key-sidebar_section label:hover{background:#e8e5df;}
+    [data-testid="stSidebar"] div[class*="st-key-edit_"] button{min-height:34px!important;height:34px!important;min-width:34px!important;padding:0!important;border:1px solid transparent!important;background-color:transparent!important;background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMyNDI0MjQiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Im0xNS41IDQuNSA0IDRNNCAyMGw0LjUtMSAxMi0xMmEyLjggMi44IDAgMCAwLTQtNGwtMTIgMTJMNCAyMFoiLz48L3N2Zz4=")!important;background-repeat:no-repeat!important;background-size:18px!important;background-position:center!important;}
+    [data-testid="stSidebar"] div[class*="st-key-edit_"] button p{font-size:0!important;}
+    [data-testid="stSidebar"] div[class*="st-key-edit_"] button:hover{border-color:#bbb7ae!important;background-color:#e1ddd5!important;}
+'''
     for name,path in PATHS.items():
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">{path}</svg>'
         data=base64.b64encode(svg.encode()).decode()
@@ -91,7 +103,7 @@ def navigation(cloud,delete_menu):
         if st.button('홈',key='nav_home',use_container_width=True):
             st.session_state.page='home'
             st.session_state.drawer_tab='menus'
-        section=st.radio('관리', ['메뉴 관리','계정 관리'],label_visibility='collapsed',key='sidebar_section')
+        section=st.radio('관리', ['메뉴 관리','계정 관리'],horizontal=True,label_visibility='collapsed',key='sidebar_section')
         if st.button('로그아웃',key='nav_logout',use_container_width=True):
             jar=cloud.cookie_store();cloud.forget(jar)
             clear_workspace()
@@ -108,7 +120,7 @@ def navigation(cloud,delete_menu):
         for mid,m in list(st.session_state.menus.items()):
             c1,c2=st.columns([4,1])
             c1.write(m['name'])
-            if c2.button('수정',key='edit_'+mid):
+            if c2.button('수정',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
                 st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
         with st.expander('메뉴 추가'):
             with st.form('new_menu',clear_on_submit=True):
