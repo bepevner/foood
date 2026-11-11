@@ -91,10 +91,7 @@ def navigation(cloud,delete_menu):
         if st.button('홈',key='nav_home',use_container_width=True):
             st.session_state.page='home'
             st.session_state.drawer_tab='menus'
-        if st.button('메뉴 목록',key='nav_menus',use_container_width=True):
-            st.session_state.drawer_tab='menus'
-        if st.button('계정 추가 · 전환',key='nav_account',use_container_width=True):
-            st.session_state.drawer_tab='accounts'
+        section=st.radio('관리', ['메뉴 관리','계정 관리'],label_visibility='collapsed',key='sidebar_section')
         if st.button('로그아웃',key='nav_logout',use_container_width=True):
             jar=cloud.cookie_store();cloud.forget(jar)
             clear_workspace()
@@ -103,9 +100,9 @@ def navigation(cloud,delete_menu):
             st.session_state['_logged_out']=True
             st.rerun()
         st.divider()
-        if st.session_state.get('drawer_tab','menus')=='accounts':
+        if section=='계정 관리':
             accounts(cloud);return
-        st.subheader('Menu collection')
+        st.subheader('메뉴 목록')
         for name in ('cloud_error','delete_notice'):
             if name in st.session_state:st.info(st.session_state.pop(name))
         for mid,m in list(st.session_state.menus.items()):

@@ -46,13 +46,8 @@ if not st.session_state.menus:
     st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
     st.stop()
 if st.session_state.get("page", "home") == "home":
-    st.subheader("내 메뉴")
-    st.caption("메뉴를 열어 원가를 계산하세요. 저장하지 않은 변경은 새로고침 시 사라집니다.")
-    for mid, data in st.session_state.menus.items():
-        if st.button(data['name'], key=f"open_{mid}", use_container_width=True):
-            st.session_state.active_menu = mid
-            st.session_state.page = "edit"
-            st.rerun()
+    st.subheader("MENU ATELIER")
+    st.caption("왼쪽 사이드바에서 메뉴를 선택하세요. 메뉴 관리와 계정 관리는 모두 사이드바에 있습니다.")
     st.stop()
 ident = st.session_state.active_menu
 current = st.session_state.menus[ident]
