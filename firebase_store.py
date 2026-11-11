@@ -128,7 +128,7 @@ def restore(jar):
 
 def gate():
     jar = cookie_store()
-    if 'auth' not in st.session_state:
+    if 'auth' not in st.session_state and not st.session_state.get('_logged_out', False):
         restore(jar)
     if 'auth' not in st.session_state:
         import auth_ui
@@ -136,11 +136,15 @@ def gate():
         st.stop()
     with st.sidebar:
         st.caption(st.session_state.auth['email'])
-        if st.button('로그아웃 (저장하지 않은 변경은 사라짐)'):
+        if st.button('로그아웃', use_container_width=True):
             forget(jar)
-            st.session_state.clear()
-            st.success('로그아웃했습니다. 아래 버튼을 누르세요.')
-            st.button('로그인 화면으로')
+            # Keep the cookie component alive long enough to flush deletion.
+            for key in list(st.session_state):
+                if key in ('auth', 'menus', 'active_menu', 'page') or key.startswith(('name_', 'price_', 'target_', 'extra_', 'ingredients_', 'confirm_delete_')):
+                    del st.session_state[key]
+            st.session_state['_logged_out'] = True
+            import auth_ui
+            auth_ui.screen(__import__(__name__), jar)
             st.stop()
     if 'menus' not in st.session_state:
         try:
