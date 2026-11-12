@@ -78,13 +78,13 @@ extra = st.number_input("1인분당 추가 직접비 (포장 용기 등, 원)", 
 
 current.update(name=menu.strip() or "이름 없는 메뉴", price=price, target=target, extra=extra)
 current["latest_rows"] = rows.to_dict("records")
-if st.button("현재 메뉴 저장", type="primary"):
-    try:
-        cloud.save(ident, current)
-        st.success("Firebase에 저장했습니다. 같은 계정으로 다시 로그인하면 불러옵니다.")
-    except (cloud.CloudError, ValueError) as e:
-        st.error(str(e))
-st.caption("자동 저장이 아닙니다. 재료 입력을 마치고 저장 버튼을 누르세요. 빈 메뉴·작성 중인 메뉴도 저장할 수 있습니다.")
+try:
+    cloud.autosave(ident, current)
+    st.caption("자동 저장 완료")
+except (cloud.CloudError, ValueError, TypeError) as e:
+    st.error("자동 저장 실패: " + str(e) + " 입력 내용을 유지하고 다시 시도하세요.")
+    st.button("저장 재시도")
+st.caption("입력 확정 시 자동 저장됩니다. 표는 Enter, 숫자·텍스트 입력은 Enter 또는 다른 칸 클릭으로 확정하세요. 저장 완료 전에 창을 닫지 마세요.")
 current.pop("summary", None)
 results, errors = [], []
 for i, row in rows.iterrows():
@@ -145,5 +145,5 @@ with st.expander("계산식과 입력 기준"):
 - **목표 판매가** = 1인분 식재료비 ÷ (목표 원가율 ÷ 100)
 - 사용량은 손질 후 실제 사용하는 양으로 입력합니다. 손실이 없다면 수율 100%를 사용합니다.
 - 구매 가격과 판매가는 부가세 포함 여부를 일관되게 입력하세요. 세무용 계산기는 아닙니다.
-- 저장 버튼을 누른 메뉴는 Firebase에 계정별로 보관됩니다. 저장하지 않은 변경은 새로고침 시 사라집니다.
+- 입력 확정 후 자동 저장 완료된 메뉴는 Firebase에 계정별로 보관됩니다. 저장 실패 또는 확정하지 않은 입력은 보관되지 않습니다.
 """)

@@ -73,7 +73,7 @@ def load():
 def save(ident, menu):
     # Persist only the current menu; no whole-account overwrite or cross-user cache.
     clean = {k:menu[k] for k in ('name','price','target','extra')}
-    clean['rows'] = menu.get('latest_rows',menu['rows'])
+    clean['rows'] = __import__('copy').deepcopy(menu.get('latest_rows',menu['rows']))
     # Pandas missing values are normalized before Firestore JSON serialization.
     for row in clean['rows']:
         for k,v in list(row.items()):
@@ -152,3 +152,20 @@ def gate():
             st.stop()
         st.session_state.menus=menus
         if menus: st.session_state.active_menu=next(iter(menus))
+
+
+def autosave(ident, menu):
+    import copy
+    import math
+    clean = {k: menu[k] for k in ('name', 'price', 'target', 'extra')}
+    clean['rows'] = copy.deepcopy(menu.get('latest_rows', menu['rows']))
+    for row in clean['rows']:
+        for key, value in list(row.items()):
+            if isinstance(value, float) and not math.isfinite(value):
+                row[key] = None
+    signature = json.dumps(clean, ensure_ascii=False, sort_keys=True, allow_nan=False)
+    key = 'saved_signature_' + st.session_state.auth['uid'] + '_' + ident
+    if st.session_state.get(key) != signature:
+        save(ident, menu)
+        st.session_state[key] = signature
+    return True

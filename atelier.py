@@ -67,6 +67,29 @@ def style():
     .st-key-nav_home button:hover,.st-key-nav_manage button:hover,.st-key-nav_logout button:hover{background-color:#e8e8e8!important;}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
     """
+    css += """
+    [data-testid="stSidebar"] .st-key-nav_home button,
+    [data-testid="stSidebar"] .st-key-nav_manage button,
+    [data-testid="stSidebar"] .st-key-nav_logout button{
+      background-image:none!important;justify-content:flex-start!important;
+      padding:14px 20px!important;min-height:54px!important;border-radius:14px!important;
+      border:1px solid #e3e3e3!important;background-color:#fff!important;
+      box-shadow:0 2px 6px #00000004!important;text-align:left!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_home button p,
+    [data-testid="stSidebar"] .st-key-nav_manage button p,
+    [data-testid="stSidebar"] .st-key-nav_logout button p{
+      font-size:14px!important;font-weight:650!important;letter-spacing:-.03em!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_home button:hover,
+    [data-testid="stSidebar"] .st-key-nav_manage button:hover{
+      background-color:#e9e9e9!important;border-color:#bbb!important;
+    }
+    [data-testid="stSidebar"] .st-key-nav_logout button{
+      background-color:#eee!important;border-color:transparent!important;
+    }
+    [data-testid="stSidebar"] .brand{margin:4px 0 24px!important;font-size:34px!important;}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
@@ -107,20 +130,19 @@ def accounts(cloud):
             clear_workspace();st.rerun()
         except cloud.CloudError as e:
             st.session_state.auth=previous;st.error(str(e))
-    st.caption('전환 전 메뉴를 저장하세요. 추가 계정은 새로고침 시 목록에서 사라집니다. 비밀번호는 저장하지 않습니다. 계정 전환 시 이전 자동 로그인 쿠키를 해제합니다.')
+    st.caption('자동 저장 완료를 확인한 후 전환하세요. 추가 계정은 새로고침 시 목록에서 사라집니다. 비밀번호는 저장하지 않습니다. 계정 전환 시 이전 자동 로그인 쿠키를 해제합니다.')
 
 def navigation(cloud,delete_menu):
     with st.sidebar:
         st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
-        st.caption(st.session_state.auth['email'])
-        if st.button('홈',key='nav_home',use_container_width=True):
+        if st.button('홈',icon=':material/home:',key='nav_home',use_container_width=True):
             st.session_state.page='home'
             st.session_state.drawer_tab='menus'
             st.session_state.sidebar_view='메뉴 관리'
-        if st.button('관리',key='nav_manage',use_container_width=True):
+        if st.button('관리',icon=':material/tune:',key='nav_manage',use_container_width=True):
             st.session_state.sidebar_view='관리'
         section=st.session_state.get('sidebar_view','메뉴 관리')
-        if st.button('로그아웃',key='nav_logout',use_container_width=True):
+        if st.button('로그아웃',icon=':material/logout:',key='nav_logout',use_container_width=True):
             jar=cloud.cookie_store();cloud.forget(jar)
             clear_workspace()
             st.session_state.pop('auth',None)
@@ -128,6 +150,8 @@ def navigation(cloud,delete_menu):
             st.session_state['_logged_out']=True
             st.rerun()
         if section=='관리':
+            with st.expander('내 계정 정보',expanded=False):
+                st.caption(st.session_state.auth['email'])
             with st.expander('계정 추가 · 전환',expanded=False):
                 accounts(cloud)
         st.subheader('메뉴 목록')
@@ -152,4 +176,4 @@ def navigation(cloud,delete_menu):
                 mid=st.session_state.active_menu
                 confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
                 st.button('삭제',on_click=delete_menu,disabled=not confirmed)
-        st.caption('새 메뉴와 수정 사항은 편집 화면에서 저장해야 합니다.')
+        st.caption('입력을 확정하면 자동 저장됩니다. 저장 완료를 확인하세요.')

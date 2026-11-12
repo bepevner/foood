@@ -23,7 +23,7 @@ def screen(cloud, jar):
         st.markdown('''<div class="auth-hero"><small>MISE / PRIVATE WORKSPACE</small>
         <h2>좋은 메뉴의 시작,<br>정확한 한 접시.</h2>
         <p>재료비 계산부터 메뉴 관리까지 한곳에서 시작하세요.</p></div>''',unsafe_allow_html=True)
-        mode=st.radio('계정 메뉴',['로그인','회원가입','비밀번호 찾기','아이디 찾기'],horizontal=True,label_visibility='collapsed')
+        mode=st.radio('계정 메뉴',['로그인','회원가입','비밀번호 찾기'],horizontal=True,label_visibility='collapsed')
         if mode=='로그인':
             with st.form('sign_in',clear_on_submit=True):
                 st.subheader('다시 만나 반가워요')
@@ -75,11 +75,4 @@ def screen(cloud, jar):
                         st.success('해당 이메일이 등록되어 있고 발송 가능한 경우 재설정 메일이 전송됩니다. 받은편지함과 스팸함을 확인하세요.')
                     except cloud.CloudError:
                         st.info('메일을 요청할 수 없습니다. 잠시 후 재시도하거나 Firebase 이메일 인증 설정을 확인하세요. 계정 존재 여부는 안내하지 않습니다.')
-        else:
-            with st.container(border=True):
-                st.subheader('아이디는 가입한 이메일이에요')
-                st.write('현재 앱은 별도의 숫자·문자 아이디 없이 이메일로 로그인합니다.')
-                st.info('이름이나 전화번호로 이메일을 자동 조회하는 기능은 제공하지 않습니다. 본인 확인 수단이 등록되어 있지 않아 안전하게 계정을 찾아드릴 수 없어요.')
-                st.markdown('1. 자주 쓰는 이메일 주소를 확인하세요.\n2. 브라우저의 비밀번호 관리자에서 이 앱 주소를 검색하세요.\n3. 이메일 주소가 기억나면 **비밀번호 찾기**에서 재설정을 요청하세요.')
-                st.caption('새 계정을 만들면 기존 계정의 메뉴는 자동으로 이전되지 않습니다.')
         st.caption('계정별 메뉴 분리 보관 · 비밀번호 원문 저장 안 함 · 공용 기기 사용 후 로그아웃')
