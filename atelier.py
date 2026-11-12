@@ -46,6 +46,27 @@ def style():
         svg=f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#202020" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">{path}</svg>'
         data=base64.b64encode(svg.encode()).decode()
         css+=f'.st-key-nav_{name} button{{background-image:url("data:image/svg+xml;base64,{data}")!important;background-repeat:no-repeat!important;background-position:12px center!important;background-size:19px!important;padding-left:42px!important;}}'
+    css += """
+    .stApp,[data-testid="stAppViewContainer"],[data-testid="stHeader"]{background:#fff!important;}
+    h1,h2,h3{font-family:Arial,sans-serif!important;font-weight:850!important;letter-spacing:-.055em!important;}
+    .brand{font-family:Arial,sans-serif!important;font-weight:900;font-size:52px;letter-spacing:-.07em;border:0!important;padding-bottom:8px;margin-bottom:8px;}
+    .brand span{font-weight:600;letter-spacing:.2em;color:#666;}
+    [data-testid="stSidebar"]{background:#f5f5f5!important;border-right:0!important;}
+    .stButton>button,.stFormSubmitButton>button,.stDownloadButton>button{border-radius:28px!important;background:#fff!important;border:1px solid #d6d6d6!important;min-height:46px;transition:background .18s,color .18s;}
+    .stButton>button:hover{background:#eee!important;border-color:#aaa!important;}
+    .stButton>button[kind="primary"],.stFormSubmitButton>button{background:#111!important;border-color:#111!important;color:#fff!important;}
+    .stButton>button[kind="primary"] p,.stFormSubmitButton>button p{color:#fff!important;}
+    [data-testid="stMetric"]{background:#f5f5f5!important;border:0!important;padding:24px!important;}
+    [data-testid="stMetricValue"]{font-weight:800!important;letter-spacing:-.05em;font-size:38px!important;}
+    [data-testid="stForm"]{background:#fafafa;padding:22px;border:0!important;}
+    [data-testid="stExpander"]{border:1px solid #e5e5e5!important;background:white;}
+    .auth-hero{background:#111;color:white;padding:38px 28px;border:0!important;}
+    .auth-hero h2{color:#fff!important;font-size:42px;line-height:1.2;}
+    .auth-hero small,.auth-hero p{color:#ddd!important;}
+    .st-key-nav_home button,.st-key-nav_manage button,.st-key-nav_logout button{background-color:transparent!important;border:0!important;border-radius:8px!important;justify-content:flex-start;font-weight:700!important;}
+    .st-key-nav_home button:hover,.st-key-nav_manage button:hover,.st-key-nav_logout button:hover{background-color:#e8e8e8!important;}
+    @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
