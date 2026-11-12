@@ -169,3 +169,37 @@ def autosave(ident, menu):
         save(ident, menu)
         st.session_state[key] = signature
     return True
+
+
+def flush_pending():
+    """Reconstruct committed widget edits before navigation can stop the editor render."""
+    if 'auth' not in st.session_state:
+        return
+    for ident, menu in st.session_state.get('menus', {}).items():
+        for field in ('name', 'price', 'target', 'extra'):
+            key = field + '_' + ident
+            if key in st.session_state:
+                menu[field] = st.session_state[key]
+        delta = st.session_state.get('ingredients_' + ident)
+        if isinstance(delta, dict):
+            import copy
+            rows = copy.deepcopy(menu['rows'])
+            for index, values in delta.get('edited_rows', {}).items():
+                if int(index) < len(rows):
+                    rows[int(index)].update(values)
+            deleted = set(delta.get('deleted_rows', []))
+            rows = [r for i, r in enumerate(rows) if i not in deleted]
+            rows.extend(delta.get('added_rows', []))
+            menu['latest_rows'] = rows
+        autosave(ident, menu)
+
+
+def change_password(old, new):
+    email = st.session_state.auth['email']
+    login(email, old)  # Reauthenticate before updating a sensitive credential.
+    key, _ = config()
+    data = call('POST', 'https://identitytoolkit.googleapis.com/v1/accounts:update',
+                params={'key': key}, json={'idToken': st.session_state.auth['token'],
+                'password': new, 'returnSecureToken': True})
+    st.session_state.auth.update(token=data['idToken'], refresh=data['refreshToken'],
+                                expires=time.time()+int(data['expiresIn']))

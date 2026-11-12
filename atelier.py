@@ -90,6 +90,11 @@ def style():
     }
     [data-testid="stSidebar"] .brand{margin:4px 0 24px!important;font-size:34px!important;}
     """
+    css += """
+    [data-testid="stSidebar"] [data-testid="stExpander"]{animation:accountReveal .28s ease-out;}
+    @keyframes accountReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    @media(prefers-reduced-motion:reduce){[data-testid="stSidebar"] [data-testid="stExpander"]{animation:none;}}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
@@ -152,6 +157,23 @@ def navigation(cloud,delete_menu):
         if section=='관리':
             with st.expander('내 계정 정보',expanded=False):
                 st.caption(st.session_state.auth['email'])
+                with st.form('change_password', clear_on_submit=True):
+                    old = st.text_input('현재 비밀번호', type='password')
+                    new = st.text_input('새 비밀번호', type='password')
+                    confirm = st.text_input('새 비밀번호 확인', type='password')
+                    submitted = st.form_submit_button('비밀번호 변경')
+                if submitted:
+                    if len(new) < 6 or new != confirm or not old:
+                        st.error('현재 비밀번호와 일치하는 새 비밀번호 확인을 입력하세요. 새 비밀번호는 6자 이상이어야 합니다.')
+                    else:
+                        try:
+                            cloud.change_password(old, new)
+                            cloud.forget(cloud.cookie_store())
+                            st.session_state.account_bank = {}
+                            st.success('변경 완료. 이 기기의 로그인 유지를 해제했습니다.')
+                        except cloud.CloudError as e:
+                            st.error(str(e))
+
             with st.expander('계정 추가 · 전환',expanded=False):
                 accounts(cloud)
         st.subheader('메뉴 목록')

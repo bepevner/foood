@@ -41,6 +41,12 @@ def delete_selected_menu():
     st.session_state["delete_notice"] = "선택한 메뉴를 삭제했습니다."
 
 import atelier
+try:
+    cloud.flush_pending()
+except (cloud.CloudError, ValueError, TypeError) as e:
+    st.error("자동 저장 실패: " + str(e))
+    st.button("자동 저장 재시도")
+    st.stop()
 atelier.navigation(cloud, delete_selected_menu)
 if not st.session_state.menus:
     st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
