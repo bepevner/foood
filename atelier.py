@@ -140,9 +140,7 @@ def accounts(cloud):
 def navigation(cloud,delete_menu):
     with st.sidebar:
         st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
-        for label, page, icon in [('홈','home','home'), ('메뉴 목록','menu_list','restaurant_menu'),
-                                  ('메뉴 추가','menu_add','add'), ('메뉴 삭제','menu_delete','delete'),
-                                  ('내 계정','my_account','person'), ('계정 추가·전환','account_switch','switch_account')]:
+        for label, page, icon in [('홈','home','home'), ('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
             if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
                          type='primary' if st.session_state.get('page','home')==page else 'secondary'):
                 st.session_state.page=page
@@ -155,6 +153,18 @@ def navigation(cloud,delete_menu):
             st.session_state['_logged_out']=True
             st.rerun()
     page=st.session_state.get('page','home')
+    hubs = {
+        'menus_hub': ('메뉴 관리', [('메뉴 목록','menu_list','restaurant_menu'), ('메뉴 추가','menu_add','add'), ('메뉴 삭제','menu_delete','delete')]),
+        'accounts_hub': ('계정 관리', [('내 계정','my_account','person'), ('계정 추가·전환','account_switch','switch_account')])
+    }
+    if page in hubs:
+        title, actions = hubs[page]
+        st.subheader(title)
+        for label, destination, icon in actions:
+            if st.button(label, icon=':material/'+icon+':', key='hub_'+destination, use_container_width=True):
+                st.session_state.page=destination
+                st.rerun()
+        st.stop()
     titles={'menu_list':'메뉴 목록','menu_add':'새 메뉴 추가','menu_delete':'메뉴 삭제','my_account':'내 계정','account_switch':'계정 추가·전환'}
     if page not in titles:
         return
