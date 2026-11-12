@@ -140,64 +140,66 @@ def accounts(cloud):
 def navigation(cloud,delete_menu):
     with st.sidebar:
         st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
-        if st.button('홈',icon=':material/home:',key='nav_home',use_container_width=True):
-            st.session_state.page='home'
-            st.session_state.drawer_tab='menus'
-            st.session_state.sidebar_view='메뉴 관리'
-        if st.button('관리',icon=':material/tune:',key='nav_manage',use_container_width=True):
-            st.session_state.sidebar_view='관리'
-        section=st.session_state.get('sidebar_view','메뉴 관리')
+        for label, page, icon in [('홈','home','home'), ('메뉴 목록','menu_list','restaurant_menu'),
+                                  ('메뉴 추가','menu_add','add'), ('메뉴 삭제','menu_delete','delete'),
+                                  ('내 계정','my_account','person'), ('계정 추가·전환','account_switch','switch_account')]:
+            if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
+                         type='primary' if st.session_state.get('page','home')==page else 'secondary'):
+                st.session_state.page=page
+                st.rerun()
         if st.button('로그아웃',icon=':material/logout:',key='nav_logout',use_container_width=True):
-            jar=cloud.cookie_store();cloud.forget(jar)
+            cloud.forget(cloud.cookie_store())
             clear_workspace()
             st.session_state.pop('auth',None)
             st.session_state.pop('account_bank',None)
             st.session_state['_logged_out']=True
             st.rerun()
-        if section=='관리':
-            account_info, account_switch = st.tabs(['내 계정', '계정 추가·전환'])
-            with account_info:
-                st.caption(st.session_state.auth['email'])
-                with st.form('change_password', clear_on_submit=True):
-                    old = st.text_input('현재 비밀번호', type='password')
-                    new = st.text_input('새 비밀번호', type='password')
-                    confirm = st.text_input('새 비밀번호 확인', type='password')
-                    submitted = st.form_submit_button('비밀번호 변경')
-                if submitted:
-                    if len(new) < 6 or new != confirm or not old:
-                        st.error('현재 비밀번호와 일치하는 새 비밀번호 확인을 입력하세요. 새 비밀번호는 6자 이상이어야 합니다.')
-                    else:
-                        try:
-                            cloud.change_password(old, new)
-                            cloud.forget(cloud.cookie_store())
-                            st.session_state.account_bank = {}
-                            st.success('변경 완료. 이 기기의 로그인 유지를 해제했습니다.')
-                        except cloud.CloudError as e:
-                            st.error(str(e))
+    page=st.session_state.get('page','home')
+    titles={'menu_list':'메뉴 목록','menu_add':'새 메뉴 추가','menu_delete':'메뉴 삭제','my_account':'내 계정','account_switch':'계정 추가·전환'}
+    if page not in titles:
+        return
+    st.subheader(titles[page])
+    if page=='my_account':
+        st.caption(st.session_state.auth['email'])
+        with st.form('change_password', clear_on_submit=True):
+            old = st.text_input('현재 비밀번호', type='password')
+            new = st.text_input('새 비밀번호', type='password')
+            confirm = st.text_input('새 비밀번호 확인', type='password')
+            submitted = st.form_submit_button('비밀번호 변경')
+        if submitted:
+            if len(new) < 6 or new != confirm or not old:
+                st.error('현재 비밀번호와 일치하는 새 비밀번호 확인을 입력하세요. 새 비밀번호는 6자 이상이어야 합니다.')
+            else:
+                try:
+                    cloud.change_password(old, new)
+                    cloud.forget(cloud.cookie_store())
+                    st.session_state.account_bank = {}
+                    st.success('변경 완료. 이 기기의 로그인 유지를 해제했습니다.')
+                except cloud.CloudError as e:
+                    st.error(str(e))
 
-            with account_switch:
-                accounts(cloud)
-        list_tab, add_tab, delete_tab = st.tabs(['목록', '추가', '삭제'])
-        with list_tab:
-            for name in ('cloud_error','delete_notice'):
-                if name in st.session_state:st.info(st.session_state.pop(name))
-            for mid,m in list(st.session_state.menus.items()):
-                c1,c2=st.columns([4,1])
-                c1.write(m['name'])
-                if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
-                    st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-        with add_tab:
-            with st.form('new_menu',clear_on_submit=True):
-                name=st.text_input('새 메뉴 이름')
-                add=st.form_submit_button('추가')
-            if add and name.strip():
-                mid=uuid.uuid4().hex
-                st.session_state.menus[mid]={'name':name.strip(),'price':8000,'target':30.0,'extra':0,'rows':[]}
+    elif page=='account_switch':
+        accounts(cloud)
+    elif page=='menu_list':
+        for name in ('cloud_error','delete_notice'):
+            if name in st.session_state:st.info(st.session_state.pop(name))
+        for mid,m in list(st.session_state.menus.items()):
+            c1,c2=st.columns([4,1])
+            c1.write(m['name'])
+            if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
                 st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-        with delete_tab:
-            if st.session_state.menus:
-                st.selectbox('삭제할 메뉴',list(st.session_state.menus),key='active_menu',format_func=lambda k:st.session_state.menus[k]['name'])
-                mid=st.session_state.active_menu
-                confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
-                st.button('삭제',on_click=delete_menu,disabled=not confirmed)
-        st.caption('입력을 확정하면 자동 저장됩니다. 저장 완료를 확인하세요.')
+    elif page=='menu_add':
+        with st.form('new_menu',clear_on_submit=True):
+            name=st.text_input('새 메뉴 이름')
+            add=st.form_submit_button('추가')
+        if add and name.strip():
+            mid=uuid.uuid4().hex
+            st.session_state.menus[mid]={'name':name.strip(),'price':8000,'target':30.0,'extra':0,'rows':[]}
+            st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
+    elif page=='menu_delete':
+        if st.session_state.menus:
+            st.selectbox('삭제할 메뉴',list(st.session_state.menus),key='active_menu',format_func=lambda k:st.session_state.menus[k]['name'])
+            mid=st.session_state.active_menu
+            confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
+            st.button('삭제',on_click=delete_menu,disabled=not confirmed)
+    st.stop()
