@@ -155,7 +155,8 @@ def navigation(cloud,delete_menu):
             st.session_state['_logged_out']=True
             st.rerun()
         if section=='관리':
-            with st.expander('내 계정 정보',expanded=False):
+            account_info, account_switch = st.tabs(['내 계정', '계정 추가·전환'])
+            with account_info:
                 st.caption(st.session_state.auth['email'])
                 with st.form('change_password', clear_on_submit=True):
                     old = st.text_input('현재 비밀번호', type='password')
@@ -174,17 +175,18 @@ def navigation(cloud,delete_menu):
                         except cloud.CloudError as e:
                             st.error(str(e))
 
-            with st.expander('계정 추가 · 전환',expanded=False):
+            with account_switch:
                 accounts(cloud)
-        st.subheader('메뉴 목록')
-        for name in ('cloud_error','delete_notice'):
-            if name in st.session_state:st.info(st.session_state.pop(name))
-        for mid,m in list(st.session_state.menus.items()):
-            c1,c2=st.columns([4,1])
-            c1.write(m['name'])
-            if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
-                st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-        with st.expander('메뉴 추가'):
+        list_tab, add_tab, delete_tab = st.tabs(['목록', '추가', '삭제'])
+        with list_tab:
+            for name in ('cloud_error','delete_notice'):
+                if name in st.session_state:st.info(st.session_state.pop(name))
+            for mid,m in list(st.session_state.menus.items()):
+                c1,c2=st.columns([4,1])
+                c1.write(m['name'])
+                if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
+                    st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
+        with add_tab:
             with st.form('new_menu',clear_on_submit=True):
                 name=st.text_input('새 메뉴 이름')
                 add=st.form_submit_button('추가')
@@ -192,8 +194,8 @@ def navigation(cloud,delete_menu):
                 mid=uuid.uuid4().hex
                 st.session_state.menus[mid]={'name':name.strip(),'price':8000,'target':30.0,'extra':0,'rows':[]}
                 st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
-        if st.session_state.menus:
-            with st.expander('메뉴 삭제'):
+        with delete_tab:
+            if st.session_state.menus:
                 st.selectbox('삭제할 메뉴',list(st.session_state.menus),key='active_menu',format_func=lambda k:st.session_state.menus[k]['name'])
                 mid=st.session_state.active_menu
                 confirmed=st.checkbox('복구할 수 없음을 확인했습니다',key=f'confirm_delete_{mid}')
