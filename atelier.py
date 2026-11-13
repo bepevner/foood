@@ -147,21 +147,27 @@ def accounts(cloud):
     st.caption('자동 저장 완료를 확인한 후 전환하세요. 추가 계정은 새로고침 시 목록에서 사라집니다. 비밀번호는 저장하지 않습니다. 계정 전환 시 이전 자동 로그인 쿠키를 해제합니다.')
 
 def navigation(cloud,delete_menu):
-    with st.container():
-        st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
-        for label, page, icon in [('홈','home','home'), ('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
-            if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
-                         type='primary' if st.session_state.get('page','home')==page else 'secondary'):
-                st.session_state.page=page
-                st.rerun()
-        if st.button('로그아웃',icon=':material/logout:',key='nav_logout',use_container_width=True):
-            cloud.forget(cloud.cookie_store())
-            clear_workspace()
-            st.session_state.pop('auth',None)
-            st.session_state.pop('account_bank',None)
-            st.session_state['_logged_out']=True
-            st.rerun()
     page=st.session_state.get('page','home')
+    if page=='home':
+        with st.container():
+            st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
+            for label, page, icon in [('홈','home','home'), ('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
+                if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
+                             type='primary' if st.session_state.get('page','home')==page else 'secondary'):
+                    st.session_state.page=page
+                    st.rerun()
+            if st.button('로그아웃',icon=':material/logout:',key='nav_logout',use_container_width=True):
+                cloud.forget(cloud.cookie_store())
+                clear_workspace()
+                st.session_state.pop('auth',None)
+                st.session_state.pop('account_bank',None)
+                st.session_state['_logged_out']=True
+                st.rerun()
+        st.stop()
+    parent = 'menus_hub' if page in ('menu_list','menu_add','menu_delete','edit') else 'accounts_hub' if page in ('my_account','account_switch') else 'home'
+    if st.button('돌아가기', icon=':material/arrow_back:', key='page_back'):
+        st.session_state.page=parent
+        st.rerun()
     hubs = {
         'menus_hub': ('메뉴 관리', [('메뉴 목록','menu_list','restaurant_menu'), ('메뉴 추가','menu_add','add'), ('메뉴 삭제','menu_delete','delete')]),
         'accounts_hub': ('계정 관리', [('내 계정','my_account','person'), ('계정 추가·전환','account_switch','switch_account')])
