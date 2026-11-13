@@ -54,8 +54,9 @@ def flush_pending():
             if key in st.session_state:
                 menu[field] = st.session_state[key]
         delta = st.session_state.get('ingredients_' + ident)
-        if isinstance(delta, dict):
-            rows = copy.deepcopy(menu['rows'])
+        bases = st.session_state.get('_ingredient_bases', {})
+        if isinstance(delta, dict) and ident in bases:
+            rows = copy.deepcopy(bases[ident])
             for index, values in delta.get('edited_rows', {}).items():
                 if int(index) < len(rows):
                     rows[int(index)].update(values)

@@ -63,13 +63,15 @@ price = a.number_input("메뉴 판매가 (원)", min_value=0, value=current["pri
 target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, value=current["target"], step=0.5, key=f"target_{ident}")
 st.subheader("1. 재료 입력")
 st.info("단위 칸을 클릭하면 목록에서 선택할 수 있습니다. 구매량과 1인분 사용량은 선택한 동일 단위로 입력하세요. 예: kg 선택 시 구매량 1, 사용량 0.1. 단위 변경 시 숫자는 자동 환산되지 않습니다. 손질 후 사용 가능 비율은 수율에 입력하세요.")
-# Each editor has a stable baseline and a separate key per menu.
-if f"ingredients_{ident}" not in st.session_state and "latest_rows" in current:
-    current["rows"] = current["latest_rows"]
-editor_initial = pd.DataFrame(current["rows"], columns=initial.columns)
+# Retain a non-widget baseline: Streamlit discards widget state on page changes.
+import copy
+bases = st.session_state.setdefault('_ingredient_bases', {})
+if f"ingredients_{ident}" not in st.session_state or ident not in bases:
+    bases[ident] = copy.deepcopy(current.get('latest_rows', current.get('rows', [])))
+editor_initial = pd.DataFrame(bases[ident], columns=initial.columns)
 for col in ["구매 가격(원)", "구매량", "1인분 사용량", "수율(%)"]:
     editor_initial[col] = pd.to_numeric(editor_initial[col], errors="coerce").astype(float)
-rows = st.data_editor(editor_initial, key=f"ingredients_{ident}", num_rows="dynamic", hide_index=True, use_container_width=True,
+rows = st.data_editor(editor_initial, key=f"ingredients_{ident}", num_rows="dynamic", hide_index=True, use_container_width=True, on_change=cloud.flush_pending,
     column_config={
         "단위": st.column_config.SelectboxColumn(
             "단위", options=UNIT_OPTIONS, required=True, default="g",
