@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 import firebase_store as cloud
 
-st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="collapsed")
 import auth_ui
 auth_ui.theme()
 st.markdown("<div class=brand>MISE<span> MENU ATELIER</span></div>", unsafe_allow_html=True)
@@ -49,11 +49,11 @@ except (cloud.CloudError, ValueError, TypeError) as e:
     st.stop()
 atelier.navigation(cloud, delete_selected_menu)
 if not st.session_state.menus:
-    st.info("등록된 메뉴가 없습니다. 왼쪽 메뉴 관리에서 새 메뉴를 추가하세요.")
+    st.info("등록된 메뉴가 없습니다. 상단 메뉴 관리에서 새 메뉴를 추가하세요.")
     st.stop()
 if st.session_state.get("page", "home") == "home":
     st.subheader("MENU ATELIER")
-    st.caption("왼쪽 사이드바에서 메뉴를 선택하세요. 메뉴 관리와 계정 관리는 모두 사이드바에 있습니다.")
+    st.caption("상단 메뉴 관리에서 메뉴를 확인하고 편집하세요.")
     st.stop()
 ident = st.session_state.active_menu
 current = st.session_state.menus[ident]

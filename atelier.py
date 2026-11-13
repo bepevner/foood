@@ -95,6 +95,10 @@ def style():
     @keyframes accountReveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     @media(prefers-reduced-motion:reduce){[data-testid="stSidebar"] [data-testid="stExpander"]{animation:none;}}
     """
+    css += """
+    [data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}
+    .block-container{max-width:1060px!important;margin-inline:auto!important;}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
@@ -138,7 +142,7 @@ def accounts(cloud):
     st.caption('자동 저장 완료를 확인한 후 전환하세요. 추가 계정은 새로고침 시 목록에서 사라집니다. 비밀번호는 저장하지 않습니다. 계정 전환 시 이전 자동 로그인 쿠키를 해제합니다.')
 
 def navigation(cloud,delete_menu):
-    with st.sidebar:
+    with st.container():
         st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
         for label, page, icon in [('홈','home','home'), ('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
             if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
@@ -196,6 +200,24 @@ def navigation(cloud,delete_menu):
         for mid,m in list(st.session_state.menus.items()):
             c1,c2=st.columns([4,1])
             c1.write(m['name'])
+            cost=0.0
+            valid=True
+            for row in m.get('rows',[]):
+                if not str(row.get('재료명','')).strip():
+                    continue
+                try:
+                    purchase=float(row['구매 가격(원)']);amount=float(row['구매량'])
+                    used=float(row['1인분 사용량']);yield_pct=float(row['수율(%)'])
+                    if amount<=0 or not 0<yield_pct<=100 or purchase<0 or used<0:
+                        raise ValueError()
+                    cost+=purchase/amount*used/(yield_pct/100)
+                except (KeyError,TypeError,ValueError):
+                    valid=False
+            price=float(m.get('price',0))
+            if valid and price>0:
+                c1.caption(f"원가율 {cost/price*100:.2f}% · 식재료비 {cost:,.0f}원 · 판매가 {price:,.0f}원")
+            else:
+                c1.caption('원가율 계산 불가 · 재료 입력 및 판매가를 확인하세요')
             if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
                 st.session_state.active_menu=mid;st.session_state.page='edit';st.session_state.drawer_open=False;st.rerun()
     elif page=='menu_add':
