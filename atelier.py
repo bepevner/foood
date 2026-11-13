@@ -36,7 +36,7 @@ def navigation(store, delete_menu):
             for key in list(st.session_state):
                 if key.startswith('delete_pick_'):del st.session_state[key]
             st.rerun()
-        if c.button('백업·불러오기',use_container_width=True):go('backup')
+        if c.button('가게 운영비용',use_container_width=True):go('operating')
         if 'bulk_notice' in st.session_state:st.success(st.session_state.pop('bulk_notice'))
         if deleting:st.info('삭제할 메뉴를 여러 개 선택한 뒤 아래의 선택 메뉴 삭제 버튼을 누르세요.')
         selected=[]
@@ -107,34 +107,33 @@ def navigation(store, delete_menu):
             if 'delete_notice' in st.session_state:st.success(st.session_state.pop('delete_notice'))
         else:st.info('삭제할 메뉴가 없습니다.')
         st.stop()
-    if page=='backup':
-        st.subheader('백업·불러오기')
-        st.warning('메뉴는 실행 중인 서버의 파일에 저장됩니다. Streamlit Cloud에서는 재배포·서버 초기화 시 사라질 수 있으니 백업 파일을 내려받으세요. 로그인 없이 공개한 주소는 누구나 메뉴를 보고 수정할 수 있습니다.')
-        payload=json.dumps({k:store.clean_menu(v) for k,v in st.session_state.menus.items()},ensure_ascii=False,indent=2)
-        st.download_button('전체 메뉴 백업',payload.encode('utf-8'),'menus_backup.json','application/json')
-        upload=st.file_uploader('메뉴 백업 파일',type=['json'])
-        confirmed=st.checkbox('현재 메뉴를 백업 파일 내용으로 교체합니다')
-        if st.button('불러오기',disabled=not upload or not confirmed):
-            try:
-                data=json.loads(upload.getvalue())
-                if not isinstance(data,dict):raise ValueError('잘못된 백업 형식')
-                for mid,m in data.items():
-                    if not isinstance(mid,str) or not isinstance(m,dict):raise ValueError('잘못된 메뉴 형식')
-                    if not isinstance(m.get('name'),str) or not isinstance(m.get('rows'),list):raise ValueError('이름 또는 재료 형식 오류')
-                    for key in ('price','extra'):
-                        if not isinstance(m.get(key),int) or m[key]<0:raise ValueError('금액 형식 오류')
-                    if not isinstance(m.get('target'),(int,float)) or not 0<m['target']<=100:raise ValueError('목표 원가율 오류')
-                    if not all(isinstance(row,dict) for row in m['rows']):raise ValueError('재료 형식 오류')
-                store.write_all(data)
-            except (ValueError,TypeError,KeyError,store.CloudError) as e:st.error(str(e))
+    if page=='operating':
+        st.subheader('가게 운영비용 설정')
+        st.caption('모든 비용은 월 기준입니다. 이미 재료비·포장비에 넣은 비용은 중복 입력하지 마세요.')
+        settings=store.get_settings()
+        fields={'rent':'월세·관리비','labor':'인건비 (사업주 급여 포함 시 여기에 입력)','utilities':'전기·수도·가스','other':'기타 운영비 (보험·통신비 등)'}
+        with st.form('operating_form'):
+            values={}
+            for key,label in fields.items():
+                values[key]=st.number_input(label+' (원/월)',min_value=0,value=int(settings[key]),step=10000)
+            values['monthly_units']=st.number_input('전체 메뉴 합계 월 예상 판매 수량 (인분)',min_value=0,value=int(settings['monthly_units']),step=100)
+            values['fee_pct']=st.number_input('판매가 대비 평균 결제·배달 수수료 (%)',min_value=0.0,max_value=100.0,value=float(settings['fee_pct']),step=0.1)
+            submit=st.form_submit_button('운영비용 저장')
+        if submit:
+            try:store.save_settings(values)
+            except store.CloudError as e:st.error(str(e))
             else:
-                for key in list(st.session_state):
-                    if key.startswith(('name_','price_','target_','extra_','ingredients_','confirm_delete_')):del st.session_state[key]
-                st.session_state.menus=data
-                if data:st.session_state.active_menu=next(iter(data))
-                go('home')
+                settings=values
+                st.success('운영비용을 저장했습니다.')
+        total=sum(settings[k] for k in fields)
+        a,b=st.columns(2)
+        a.metric('월 운영비 합계',f'{total:,.0f}원')
+        units=settings['monthly_units']
+        b.metric('1인분당 배분 운영비',f'{total/units:,.0f}원' if units else '판매 수량 입력 필요')
+        st.info('월 운영비 ÷ 전체 월 판매 수량을 모든 메뉴에 동일하게 배분합니다. 수수료는 각 메뉴 판매가에 따로 적용하며 식재료 원가율에는 포함하지 않습니다.')
+        st.caption('세금·대출이자·감가상각 등 입력하지 않은 비용은 반영되지 않습니다. 실제 순이익이 아닌 추정치입니다.')
         st.stop()
     if page in ('save_help','formula_help'):
-        if page=='save_help':st.write('입력을 Enter 또는 다른 칸 클릭으로 확정하면 서버 파일에 저장됩니다. Cloud에서는 영구 보관이 보장되지 않으므로 홈의 백업 기능을 이용하세요.')
+        if page=='save_help':st.write('입력을 Enter 또는 다른 칸 클릭으로 확정하면 서버 파일에 저장됩니다. Streamlit Cloud에서는 재배포·서버 초기화 시 데이터가 사라질 수 있습니다.')
         else:st.write('재료비 = 구매 가격 ÷ 구매량 ÷ (수율/100) × 사용량. 원가율 = 재료비 합계 ÷ 판매가 × 100. 구매량과 사용량은 같은 단위로 입력하세요.')
         st.stop()

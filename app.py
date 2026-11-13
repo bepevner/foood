@@ -138,6 +138,20 @@ st.caption("목표 판매가는 식재료비만을 기준으로 계산합니다.
 st.dataframe(pd.DataFrame(results).round(2), hide_index=True, use_container_width=True)
 summary = pd.DataFrame([{"메뉴명": menu, "판매가": price, "식재료비": material, "추가 직접비": extra, "식재료 원가율(%)": material / price * 100 if price else None, "직접비 차감 잔액": price-direct, "목표 원가율(%)": target, "목표 판매가": recommended}])
 current["summary"] = summary.iloc[0].to_dict()
+st.subheader("가게 운영비 반영 예상")
+try:
+    settings = cloud.get_settings()
+    allocated, fee, remainder = cloud.operating_estimate(price, material, extra, settings)
+    x, y, z = st.columns(3)
+    x.metric("1인분 배분 운영비", f"{allocated:,.0f}원" if allocated is not None else "설정 필요")
+    y.metric("예상 결제·배달 수수료", f"{fee:,.0f}원")
+    z.metric("운영비 반영 후 예상 잔액", f"{remainder:,.0f}원" if remainder is not None else "설정 필요")
+    st.caption("판매가 − 식재료비 − 추가 직접비 − 수수료 − 배분 운영비. 실제 순이익이 아니며 입력하지 않은 비용과 세금은 제외됩니다. 식재료 원가율은 기존대로 유지합니다.")
+    if allocated is None:
+        st.info("홈의 가게 운영비용에서 월 예상 판매 수량을 입력하세요.")
+except cloud.CloudError as e:
+    st.error(str(e))
+
 st.subheader("3. 등록 메뉴 비교")
 all_summaries = [m["summary"] for m in st.session_state.menus.values() if "summary" in m]
 comparison = pd.DataFrame(all_summaries)
