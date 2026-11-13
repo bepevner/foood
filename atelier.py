@@ -104,6 +104,10 @@ def style():
     .st-key-nav_logout button p,.st-key-nav_logout button span{color:white!important;}
     .st-key-nav_logout button:hover{background:#b42318!important;border-color:#b42318!important;}
     """
+    css += """
+    .brand{font-family: 'Gungsuh','궁서','GungsuhChe','궁서체','Batang','바탕',serif!important;
+    font-weight:400!important;font-style:normal!important;letter-spacing:.015em!important;}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
@@ -150,8 +154,7 @@ def navigation(cloud,delete_menu):
     page=st.session_state.get('page','home')
     if page=='home':
         with st.container():
-            st.markdown('<div class="brand" style="font-size:28px">MISE</div>',unsafe_allow_html=True)
-            for label, page, icon in [('홈','home','home'), ('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
+            for label, page, icon in [('메뉴 관리','menus_hub','restaurant_menu'), ('계정 관리','accounts_hub','person')]:
                 if st.button(label,icon=':material/'+icon+':',key='route_'+page,use_container_width=True,
                              type='primary' if st.session_state.get('page','home')==page else 'secondary'):
                     st.session_state.page=page

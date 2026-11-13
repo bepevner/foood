@@ -20,7 +20,7 @@ def remember_login(cloud, jar, remember, email):
 def screen(cloud, jar):
     _, main, _ = st.columns([1,5,1])
     with main:
-        st.markdown('''<div class="auth-hero"><small>MISE / PRIVATE WORKSPACE</small>
+        st.markdown('''<div class="auth-hero"><small>원가율 계산기</small>
         <h2>좋은 메뉴의 시작,<br>정확한 한 접시.</h2>
         <p>재료비 계산부터 메뉴 관리까지 한곳에서 시작하세요.</p></div>''',unsafe_allow_html=True)
         mode=st.radio('계정 메뉴',['로그인','회원가입','비밀번호 찾기'],horizontal=True,label_visibility='collapsed')

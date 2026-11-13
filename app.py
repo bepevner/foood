@@ -4,10 +4,10 @@ import pandas as pd
 import streamlit as st
 import firebase_store as cloud
 
-st.set_page_config(page_title="한 접시 원가 계산기", page_icon="M", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="한 접시 원가 계산기", page_icon="계", layout="wide", initial_sidebar_state="collapsed")
 import auth_ui
 auth_ui.theme()
-st.markdown("<div class=brand>MISE<span> MENU ATELIER</span></div>", unsafe_allow_html=True)
+st.markdown("<div class=brand>원가율 계산기</div>", unsafe_allow_html=True)
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 
 UNIT_OPTIONS = ["g", "kg", "mL", "L", "개", "장", "마리", "봉", "팩", "병", "캔", "회분"]
@@ -52,7 +52,7 @@ if not st.session_state.menus:
     st.info("등록된 메뉴가 없습니다. 상단 메뉴 관리에서 새 메뉴를 추가하세요.")
     st.stop()
 if st.session_state.get("page", "home") == "home":
-    st.subheader("MENU ATELIER")
+    st.subheader("원가율 계산기")
     st.caption("상단 메뉴 관리에서 메뉴를 확인하고 편집하세요.")
     st.stop()
 ident = st.session_state.active_menu
