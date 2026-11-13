@@ -61,8 +61,59 @@ menu = st.text_input("메뉴 이름", current["name"], key=f"name_{ident}")
 a, b = st.columns(2)
 price = a.number_input("메뉴 판매가 (원)", min_value=0, value=current["price"], step=100, key=f"price_{ident}")
 target = b.number_input("목표 원가율 (%)", min_value=0.1, max_value=100.0, value=current["target"], step=0.5, key=f"target_{ident}")
-st.subheader("1. 재료 입력")
-st.info("단위 칸을 클릭하면 목록에서 선택할 수 있습니다. 구매량과 1인분 사용량은 선택한 동일 단위로 입력하세요. 예: kg 선택 시 구매량 1, 사용량 0.1. 단위 변경 시 숫자는 자동 환산되지 않습니다. 손질 후 사용 가능 비율은 수율에 입력하세요.")
+st.markdown("""<style>
+.ingredient-heading{margin:30px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ingredient-heading h2{margin:0;font-size:26px;letter-spacing:-1px}
+.ingredient-heading span{font-size:12px;background:#edf4f0;color:#245d46;border:1px solid #d5e5dc;padding:6px 12px;border-radius:30px}
+.ingredient-note{background:#f6f7f9;border:1px solid #e8ebef;border-radius:14px;padding:15px 18px;color:#4b5563;font-size:14px;margin-bottom:18px;line-height:1.7}
+[data-testid="stDataFrame"]{border:1px solid #e3e7ed;border-radius:14px;overflow:hidden}
+[data-testid="stDialog"] [role="dialog"]{border-radius:22px;background:#fff}
+[data-testid="stDialog"] [data-testid="stForm"]{border:0;background:#f8f9fb;border-radius:16px;padding:20px}
+[data-testid="stDialog"] input{border-radius:10px}
+.st-key-open_ingredient button{background:#18252d!important;color:white!important;border:0!important;border-radius:12px!important;min-height:46px}
+.st-key-open_ingredient button p{color:white!important}
+@media(max-width:600px){.ingredient-heading h2{font-size:22px}.ingredient-note{font-size:13px}}
+</style>""",unsafe_allow_html=True)
+st.markdown('<div class="ingredient-heading"><h2>재료 관리</h2><span>입력 확정 후 자동 저장</span></div>',unsafe_allow_html=True)
+
+@st.dialog("새 재료 추가")
+def add_ingredient_dialog(menu_id):
+    st.caption("구매 정보와 1인분 사용량만 입력하세요.")
+    with st.form('ingredient_add_form',clear_on_submit=False):
+        ingredient_name=st.text_input('재료 이름',placeholder='예: 쌀, 양파, 닭가슴살')
+        left,right=st.columns([2,1])
+        purchase=left.number_input('구매 가격 (원)',min_value=0.0,step=100.0)
+        unit=right.selectbox('단위',UNIT_OPTIONS)
+        left,right=st.columns(2)
+        amount=left.number_input('구매량',min_value=0.001,value=1.0,step=1.0)
+        used=right.number_input('1인분 사용량',min_value=0.0,value=1.0,step=1.0)
+        yield_pct=st.number_input('손질 후 사용 가능 비율 (%)',min_value=0.1,max_value=100.0,value=100.0,step=1.0,help='껍질이나 뼈를 버리지 않는 재료는 100%로 두세요.')
+        st.caption('구매량과 사용량은 위에서 선택한 같은 단위입니다.')
+        submitted=st.form_submit_button('재료 추가',use_container_width=True,type='primary')
+    if submitted:
+        if not ingredient_name.strip():
+            st.error('재료 이름을 입력해 주세요.')
+        else:
+            import copy
+            old=st.session_state.menus[menu_id]
+            new=copy.deepcopy(old)
+            new['latest_rows']=copy.deepcopy(old.get('latest_rows',old.get('rows',[])))
+            new['latest_rows'].append({'재료명':ingredient_name.strip(),'단위':unit,'구매 가격(원)':purchase,'구매량':amount,'1인분 사용량':used,'수율(%)':yield_pct})
+            proposed=dict(st.session_state.menus);proposed[menu_id]=new
+            try:cloud.write_all(proposed)
+            except cloud.CloudError as e:st.error(str(e))
+            else:
+                st.session_state.menus[menu_id]=new
+                st.session_state.pop('ingredients_'+menu_id,None)
+                st.session_state.get('_ingredient_bases',{}).pop(menu_id,None)
+                st.session_state['_ingredient_added']=True
+                st.rerun()
+
+if st.button('＋ 재료 추가',key='open_ingredient',use_container_width=True):
+    add_ingredient_dialog(ident)
+if st.session_state.pop('_ingredient_added',False):
+    st.success('재료를 추가하고 저장했어요.')
+st.markdown('<div class="ingredient-note">새 재료는 <b>재료 추가</b>에서 간편하게 등록하세요. 아래 표를 눌러 기존 재료도 수정할 수 있어요.<br>예: 단위가 kg이면 구매량 <b>1</b>, 사용량 <b>0.1</b> · 단위를 바꿔도 숫자는 자동 환산되지 않아요.</div>',unsafe_allow_html=True)
 # Retain a non-widget baseline: Streamlit discards widget state on page changes.
 import copy
 bases = st.session_state.setdefault('_ingredient_bases', {})
