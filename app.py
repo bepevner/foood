@@ -2,11 +2,11 @@ import math
 import uuid
 import pandas as pd
 import streamlit as st
-import firebase_store as cloud
+import local_store as cloud
 
-st.set_page_config(page_title="한 접시 원가 계산기", page_icon="계", layout="wide", initial_sidebar_state="collapsed")
-import auth_ui
-auth_ui.theme()
+st.set_page_config(page_title="원가율 계산기", page_icon=":material/calculate:", layout="wide", initial_sidebar_state="collapsed")
+import atelier
+atelier.style()
 st.markdown("<div class=brand>원가율 계산기</div>", unsafe_allow_html=True)
 st.caption("식재료 구매 비용과 1인분 사용량으로 메뉴의 재료비를 계산하세요.")
 

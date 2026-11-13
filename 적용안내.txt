@@ -1,0 +1,8 @@
+계정 없는 원가율 계산기
+
+1. app.py, atelier.py, local_store.py, requirements.txt와 .streamlit/config.toml을 GitHub에 올리고 Streamlit을 재시작하세요.
+2. 기존 auth_ui.py, firebase_store.py, firestore.rules는 삭제해도 됩니다. Firebase 및 login_cookie Secrets는 더 이상 사용하지 않습니다.
+3. 기존 Firebase 메뉴는 자동으로 옮겨지지 않습니다. 기존 앱에서 재료·판매가를 기록한 뒤 변경하세요. CSV 비교표는 재료 전체 백업이 아닙니다.
+4. 메뉴는 data/menus.json에 자동 저장됩니다. 개인 PC에서 실행하면 같은 폴더가 유지되는 한 다시 열어도 유지됩니다. Streamlit Cloud에서는 재배포·서버 초기화 시 사라질 수 있으므로 홈의 전체 메뉴 백업을 이용하세요.
+5. 로그인 없이 공개 배포하면 주소를 아는 누구나 같은 메뉴를 보고 수정·삭제할 수 있습니다. 동시 편집에는 적합하지 않습니다. 엄마만 사용할 경우 개인 PC 실행을 권장합니다.
+6. 실행: pip install -r requirements.txt 후 streamlit run app.py
