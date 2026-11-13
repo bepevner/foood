@@ -27,10 +27,23 @@ def navigation(store, delete_menu):
         st.subheader('우리 가게 메뉴')
         a,b,c=st.columns(3)
         if a.button('메뉴 추가',use_container_width=True):go('menu_add')
-        if b.button('메뉴 삭제',use_container_width=True):go('menu_delete')
+        deleting=st.session_state.get('delete_mode',False)
+        if deleting:
+            st.markdown('<style>.st-key-delete_toggle button,.st-key-delete_execute button{background:#d92d20!important;border-color:#d92d20!important;color:#fff!important}.st-key-delete_toggle button p,.st-key-delete_execute button p{color:#fff!important}</style>',unsafe_allow_html=True)
+        if b.button('삭제 취소' if deleting else '메뉴 삭제',key='delete_toggle',use_container_width=True):
+            st.session_state.delete_mode=not deleting
+            st.session_state.pop('bulk_confirm',None)
+            for key in list(st.session_state):
+                if key.startswith('delete_pick_'):del st.session_state[key]
+            st.rerun()
         if c.button('백업·불러오기',use_container_width=True):go('backup')
+        if 'bulk_notice' in st.session_state:st.success(st.session_state.pop('bulk_notice'))
+        if deleting:st.info('삭제할 메뉴를 여러 개 선택한 뒤 아래의 선택 메뉴 삭제 버튼을 누르세요.')
+        selected=[]
         for mid,m in st.session_state.menus.items():
-            if st.button(m['name'],key='view_'+mid,use_container_width=True):
+            if deleting:
+                if st.checkbox(m['name'],key='delete_pick_'+mid):selected.append(mid)
+            elif st.button(m['name'],key='view_'+mid,use_container_width=True):
                 st.session_state.active_menu=mid
                 go('edit')
             cost=0.;valid=True
@@ -45,6 +58,27 @@ def navigation(store, delete_menu):
             a.metric('원가율',f'{cost/price*100:.2f}%' if valid and price else '계산 불가')
             b.metric('1인분 재료비',f'{cost:,.0f}원' if valid else '확인 필요')
             c.metric('판매가',f'{price:,.0f}원')
+        if deleting and st.session_state.menus:
+            st.caption(f'{len(selected)}개 선택됨')
+            # Confirmation is tied to this exact selection.
+            confirmation_key='bulk_confirm_'+'_'.join(sorted(selected))
+            confirmed=st.checkbox('선택한 메뉴를 삭제하면 복구할 수 없음을 확인했습니다',key=confirmation_key)
+            if st.button(f'선택 메뉴 {len(selected)}개 삭제',key='delete_execute',disabled=not selected or not confirmed,use_container_width=True):
+                remaining={k:v for k,v in st.session_state.menus.items() if k not in selected}
+                try:store.write_all(remaining)
+                except store.CloudError as e:st.error(str(e))
+                else:
+                    st.session_state.menus=remaining
+                    for mid in selected:
+                        for prefix in ('name','price','target','extra','ingredients','confirm_delete'):
+                            st.session_state.pop(f'{prefix}_{mid}',None)
+                    if remaining:st.session_state.active_menu=next(iter(remaining))
+                    else:st.session_state.pop('active_menu',None)
+                    st.session_state.delete_mode=False
+                    st.session_state.bulk_notice=f'{len(selected)}개 메뉴를 삭제했습니다.'
+                    for key in list(st.session_state):
+                        if key.startswith(('delete_pick_','bulk_confirm_')):del st.session_state[key]
+                    st.rerun()
         if not st.session_state.menus:st.info('메뉴 추가를 눌러 첫 메뉴를 등록하세요.')
         st.stop()
     if page=='menu_add':
