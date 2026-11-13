@@ -35,6 +35,28 @@ def gate():
         except (OSError, ValueError) as e:
             st.error('저장 파일을 읽지 못했습니다. 원본 파일을 확인하세요. ' + str(e))
             st.stop()
+        # Add one sample once; a separate marker prevents deleted samples returning.
+        marker = DATA.parent / '.sample_kimchi_v31'
+        if not marker.exists():
+            sample_id = 'example_kimchi_fried_rice_v31'
+            proposed = dict(st.session_state.menus)
+            if sample_id not in proposed:
+                proposed[sample_id] = {
+                    'name':'김치볶음밥 (예시)', 'price':8000, 'target':30.0, 'extra':300,
+                    'rows':[
+                        {'재료명':'쌀','단위':'g','구매 가격(원)':30000.0,'구매량':10000.0,'1인분 사용량':100.0,'수율(%)':100.0},
+                        {'재료명':'김치','단위':'g','구매 가격(원)':10000.0,'구매량':1000.0,'1인분 사용량':100.0,'수율(%)':100.0},
+                        {'재료명':'달걀','단위':'개','구매 가격(원)':9000.0,'구매량':30.0,'1인분 사용량':1.0,'수율(%)':100.0},
+                        {'재료명':'기름·양념','단위':'회분','구매 가격(원)':900.0,'구매량':1.0,'1인분 사용량':1.0,'수율(%)':100.0}
+                    ]
+                }
+            try:
+                write_all(proposed)
+                marker.write_text('added', encoding='utf-8')
+                st.session_state.menus = proposed
+            except (CloudError, OSError) as e:
+                st.error('예시 메뉴 추가 실패: '+str(e))
+                st.stop()
         if st.session_state.menus:
             st.session_state.active_menu = next(iter(st.session_state.menus))
 
