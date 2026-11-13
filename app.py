@@ -145,14 +145,8 @@ st.dataframe(comparison.round(2), hide_index=True, use_container_width=True)
 st.caption("유효한 재료 입력이 완료된 메뉴만 표시됩니다. 새 메뉴는 재료를 입력하면 비교표에 나타납니다.")
 st.download_button("전체 메뉴 비교 CSV 저장", comparison.to_csv(index=False).encode("utf-8-sig"), "all_menu_costs.csv", "text/csv")
 st.download_button("계산 결과 CSV 저장", summary.to_csv(index=False).encode("utf-8-sig"), "menu_cost.csv", "text/csv")
-results_info, formula_info = st.tabs(["저장 안내", "계산식·입력 기준"])
-with results_info:
-    st.caption("입력을 확정하면 자동 저장됩니다. 저장 완료 메시지를 확인하세요.")
-with formula_info:
-    st.markdown("""- **재료별 원가** = 구매 가격 ÷ (구매량 × 수율 ÷ 100) × 1인분 사용량
-- **식재료 원가율** = 1인분 식재료비 ÷ 판매가 × 100
-- **목표 판매가** = 1인분 식재료비 ÷ (목표 원가율 ÷ 100)
-- 사용량은 손질 후 실제 사용하는 양으로 입력합니다. 손실이 없다면 수율 100%를 사용합니다.
-- 구매 가격과 판매가는 부가세 포함 여부를 일관되게 입력하세요. 세무용 계산기는 아닙니다.
-- 입력 확정 후 자동 저장 완료된 메뉴는 Firebase에 계정별로 보관됩니다. 저장 실패 또는 확정하지 않은 입력은 보관되지 않습니다.
-""")
+help_columns=st.columns(2)
+if help_columns[0].button('저장 안내',use_container_width=True):
+    st.session_state.page='save_help';st.rerun()
+if help_columns[1].button('계산식·입력 기준',use_container_width=True):
+    st.session_state.page='formula_help';st.rerun()

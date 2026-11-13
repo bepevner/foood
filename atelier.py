@@ -99,6 +99,11 @@ def style():
     [data-testid="stSidebar"],[data-testid="stSidebarCollapsedControl"]{display:none!important;}
     .block-container{max-width:1060px!important;margin-inline:auto!important;}
     """
+    css += """
+    .st-key-nav_logout button{background:#d92d20!important;color:white!important;border:1px solid #d92d20!important;}
+    .st-key-nav_logout button p,.st-key-nav_logout button span{color:white!important;}
+    .st-key-nav_logout button:hover{background:#b42318!important;border-color:#b42318!important;}
+    """
     st.markdown(css+'</style>',unsafe_allow_html=True)
 
 def clear_workspace():
@@ -170,6 +175,15 @@ def navigation(cloud,delete_menu):
                 st.rerun()
         st.stop()
     titles={'menu_list':'메뉴 목록','menu_add':'새 메뉴 추가','menu_delete':'메뉴 삭제','my_account':'내 계정','account_switch':'계정 추가·전환'}
+    if page in ('save_help','formula_help'):
+        st.subheader('저장 안내' if page=='save_help' else '계산식·입력 기준')
+        if page=='save_help':
+            st.write('Enter 또는 다른 칸 클릭으로 입력을 확정하면 자동 저장됩니다. 저장 완료 메시지를 확인하세요.')
+        else:
+            st.write('1인분 원가 = 재료별 구매 가격 ÷ 구매량 ÷ (수율/100) × 사용량의 합계. 원가율 = 1인분 원가 ÷ 판매가 × 100. 구매량과 사용량은 같은 단위를 사용하세요. 원가는 식재료비이며 인건비·임대료는 포함하지 않습니다.')
+        if st.button('메뉴로 돌아가기'):
+            st.session_state.page='edit';st.rerun()
+        st.stop()
     if page not in titles:
         return
     st.subheader(titles[page])
@@ -199,7 +213,10 @@ def navigation(cloud,delete_menu):
             if name in st.session_state:st.info(st.session_state.pop(name))
         for mid,m in list(st.session_state.menus.items()):
             c1,c2=st.columns([4,1])
-            c1.write(m['name'])
+            if c1.button(m['name'],key='view_'+mid,use_container_width=True):
+                st.session_state.active_menu=mid
+                st.session_state.page='edit'
+                st.rerun()
             cost=0.0
             valid=True
             for row in m.get('rows',[]):
@@ -215,7 +232,11 @@ def navigation(cloud,delete_menu):
                     valid=False
             price=float(m.get('price',0))
             if valid and price>0:
-                c1.caption(f"원가율 {cost/price*100:.2f}% · 식재료비 {cost:,.0f}원 · 판매가 {price:,.0f}원")
+                with c1:
+                    metrics=st.columns(3)
+                    metrics[0].metric('원가율',f'{cost/price*100:.2f}%')
+                    metrics[1].metric('원가 (1인분 재료비)',f'{cost:,.0f}원')
+                    metrics[2].metric('판매가',f'{price:,.0f}원')
             else:
                 c1.caption('원가율 계산 불가 · 재료 입력 및 판매가를 확인하세요')
             if c2.button('',icon=':material/edit:',key='edit_'+mid,help='메뉴 수정',use_container_width=True):
