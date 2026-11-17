@@ -114,6 +114,49 @@ if st.button('＋ 재료 추가',key='open_ingredient',use_container_width=True)
 if st.session_state.pop('_ingredient_added',False):
     st.success('재료를 추가하고 저장했어요.')
 st.markdown('<div class="ingredient-note">새 재료는 <b>재료 추가</b>에서 간편하게 등록하세요. 아래 표를 눌러 기존 재료도 수정할 수 있어요.<br>예: 단위가 kg이면 구매량 <b>1</b>, 사용량 <b>0.1</b> · 단위를 바꿔도 숫자는 자동 환산되지 않아요.</div>',unsafe_allow_html=True)
+# Selection controls are separate from editable ingredient data.
+if st.session_state.pop('_ingredient_deleted', False):
+    st.success('선택한 재료를 삭제하고 저장했어요.')
+with st.container(border=True):
+    st.markdown('**재료 선택 삭제**')
+    deletion_rows = current.get('latest_rows', current.get('rows', []))
+    if not deletion_rows:
+        st.caption('삭제할 재료가 없습니다.')
+    else:
+        with st.form('ingredient_delete_' + ident):
+            chosen = st.multiselect(
+                '삭제할 재료 선택 (여러 개 선택 가능)',
+                options=list(range(len(deletion_rows))),
+                format_func=lambda i: str(i + 1) + '. ' + str(deletion_rows[i].get('재료명') or '이름 없는 재료'),
+                placeholder='삭제할 재료를 선택하세요',
+            )
+            confirmed = st.checkbox('선택한 재료를 삭제합니다. 삭제 후에는 복구할 수 없습니다.')
+            remove = st.form_submit_button('선택 재료 삭제', type='primary', use_container_width=True)
+        if remove:
+            if not chosen:
+                st.warning('삭제할 재료를 먼저 선택해 주세요.')
+            elif not confirmed:
+                st.warning('삭제 확인에 체크해 주세요.')
+            else:
+                import copy
+                updated = copy.deepcopy(current)
+                remaining = [copy.deepcopy(row) for i, row in enumerate(deletion_rows) if i not in set(chosen)]
+                updated['rows'] = remaining
+                updated['latest_rows'] = copy.deepcopy(remaining)
+                updated.pop('summary', None)
+                proposed = dict(st.session_state.menus)
+                proposed[ident] = updated
+                try:
+                    cloud.write_all(proposed)
+                except cloud.CloudError as e:
+                    st.error('삭제 내용을 저장하지 못했습니다: ' + str(e))
+                else:
+                    st.session_state.menus[ident] = updated
+                    st.session_state.pop('ingredients_' + ident, None)
+                    st.session_state.get('_ingredient_bases', {}).pop(ident, None)
+                    st.session_state['_ingredient_deleted'] = True
+                    st.rerun()
+
 # Retain a non-widget baseline: Streamlit discards widget state on page changes.
 import copy
 bases = st.session_state.setdefault('_ingredient_bases', {})
